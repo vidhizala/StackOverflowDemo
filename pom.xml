@@ -35,7 +35,7 @@
             <artifactId>robolectric</artifactId>
             <version>${robolectric.version}</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/robolectric-2.3-20140402.030010-151-jar-with-dependencies.jar</systemPath>
+            <systemPath>${project.basedir}/jar/robolectric-2.3-20140402.030010-151-jar-with-dependencies.jar</systemPath>
         </dependency>
 
 

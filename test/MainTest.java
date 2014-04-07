@@ -1,32 +1,17 @@
-import android.app.Activity;
-import android.util.Log;
-
-
 import com.vidhi.sodemoapp.DBHandler;
 import com.vidhi.sodemoapp.HttpClient;
 import com.vidhi.sodemoapp.MainActivity;
 import com.vidhi.sodemoapp.QuestionInfo;
-import static org.junit.Assert.*;
-
-import dalvik.annotation.TestTarget;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
-import java.io.*;
-import java.lang.AssertionError;
-import java.lang.Exception;
-import java.lang.System;
-import java.util.ArrayList;
-import java.util.Arrays;
 
-import org.junit.Assert;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.CoreMatchers.*;
+import java.io.*;
+import java.util.ArrayList;
 
 
 @Config(emulateSdk = 18)
@@ -46,7 +31,6 @@ public class MainTest {
         String rawData = readFile();
         if (dbHandler.convertResponse(rawData)) {
 
-            System.out.println("inside setup of maintest " +rawData);
             long returnID = dbHandler.addToMaster("html");
             dbHandler.storeData(returnID);
         }
