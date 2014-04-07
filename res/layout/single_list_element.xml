@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center_vertical"
+              android:minHeight="?android:attr/listPreferredItemHeight"
+              android:orientation="vertical"
+              android:paddingRight="?android:attr/scrollbarSize">
+
+
+    <TextView
+            android:id="@+id/questiontitle"
+            android:layout_width="wrap_content"
+            android:layout_height="26dip"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            style="@android:style/TextAppearance.Medium"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="marquee"
+    />
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:layout_width="fill_parent"
+                    android:layout_height="?android:attr/listPreferredItemHeight"
+                    android:padding="6dip">
+
+        <TextView
+                android:id="@+id/tag1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@android:style/TextAppearance.Small"
+                android:singleLine="true"
+                android:ellipsize="marquee"
+        />
+
+        <TextView
+                android:id="@+id/tag2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/tag1"
+                android:paddingLeft="2dp"
+                style="@android:style/TextAppearance.Small"
+                android:singleLine="true"
+                android:ellipsize="marquee"
+        />
+
+        <TextView
+                android:id="@+id/tag3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/tag2"
+                android:paddingLeft="2dp"
+                style="@android:style/TextAppearance.Small"
+                android:singleLine="true"
+                android:ellipsize="marquee"
+        />
+
+        <TextView
+                android:id="@+id/tag4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/tag3"
+                android:paddingLeft="2dp"
+                style="@android:style/TextAppearance.Small"
+                android:singleLine="true"
+                android:ellipsize="marquee"
+        />
+
+        <TextView
+                android:id="@+id/tag5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/tag4"
+                android:paddingLeft="2dp"
+                style="@android:style/TextAppearance.Small"
+                android:singleLine="true"
+                android:ellipsize="marquee"
+        />
+
+        <TextView
+                android:id="@+id/questionscore"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentBottom="true"
+                android:gravity="right"
+                android:singleLine="true"
+        />
+    </RelativeLayout>
+</LinearLayout>
