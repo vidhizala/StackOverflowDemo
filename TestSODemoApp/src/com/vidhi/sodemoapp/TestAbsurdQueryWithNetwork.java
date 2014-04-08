@@ -7,6 +7,7 @@ import junit.framework.Assert;
 
 public class TestAbsurdQueryWithNetwork extends ActivityInstrumentationTestCase2<MainActivity> {
     private Solo solo;
+    private String absurdInput = "dsadasdasdad";
 
     public TestAbsurdQueryWithNetwork() {
         super(MainActivity.class);
@@ -23,7 +24,7 @@ public class TestAbsurdQueryWithNetwork extends ActivityInstrumentationTestCase2
 
         SearchView searchView = (SearchView) solo.getView(R.id.action_search);
         solo.clickOnView(searchView);
-        solo.enterText(0, "jhcjshgfjhdsgf");
+        solo.enterText(0, absurdInput);
         solo.sendKey(Solo.ENTER);
 
         Assert.assertTrue(solo.searchText("Please wait..."));

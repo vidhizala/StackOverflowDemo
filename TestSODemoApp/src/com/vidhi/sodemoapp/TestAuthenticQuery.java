@@ -9,6 +9,7 @@ import junit.framework.Assert;
 
 public class TestAuthenticQuery extends ActivityInstrumentationTestCase2<MainActivity> {
     private Solo solo;
+    String authenticQuery = "sql";
 
     public TestAuthenticQuery() {
         super(MainActivity.class);
@@ -25,7 +26,7 @@ public class TestAuthenticQuery extends ActivityInstrumentationTestCase2<MainAct
 
         SearchView searchView = (SearchView) solo.getView(R.id.action_search);
         solo.clickOnView(searchView);
-        solo.enterText(0, "sqlite");
+        solo.enterText(0, authenticQuery);
         solo.sendKey(Solo.ENTER);
 
         Assert.assertTrue(solo.searchText("Please wait..."));

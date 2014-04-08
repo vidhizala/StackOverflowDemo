@@ -7,6 +7,7 @@ import junit.framework.Assert;
 
 public class TestMainRobotium extends ActivityInstrumentationTestCase2<MainActivity> {
     private Solo solo;
+    String authenticQuery = "sql";
 
     public TestMainRobotium() {
         super(MainActivity.class);
@@ -22,11 +23,9 @@ public class TestMainRobotium extends ActivityInstrumentationTestCase2<MainActiv
 
         SearchView searchView = (SearchView) solo.getView(R.id.action_search);
         solo.clickOnView(searchView);
-        solo.enterText(0, "sqlite");
+        solo.enterText(0, authenticQuery);
         solo.sendKey(Solo.ENTER);
-
         Assert.assertTrue(solo.searchText("Please wait..."));
-
         solo.sleep(1000);
 
     }
