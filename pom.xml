@@ -10,7 +10,6 @@
     <name>Stackoverflow</name>
     <properties>
         <robolectric.version>2.3-SNAPSHOT</robolectric.version>
-        <filename>/Users/vidhi/work/testDummyHttpResponse.txt</filename>
     </properties>
 
 
