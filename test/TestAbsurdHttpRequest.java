@@ -16,7 +16,7 @@ import static org.junit.Assert.assertThat;
 
 @Config(emulateSdk = 18)
 @RunWith(RobolectricTestRunner.class)
-public class TestAbsurdHttpRequest {
+public class TestAbsurdHttpRequest extends DisplayTestInfo{
 
     private DBHandler dbHandler;
     private HttpClient httpClient;
@@ -32,26 +32,11 @@ public class TestAbsurdHttpRequest {
         dbHandler = new DBHandler(mainActivity.getApplicationContext(), null, null, 1);
     }
 
-    public void beforeTest (String functionName) throws Exception {
-        System.out.println ("\n\n------------------\n Function Details \n------------------");
-        System.out.println ("Function Name: " + functionName);
-        System.out.println ("Source file name: TestAbsurdHttpRequest.java");
-        System.out.println ("Testing started...");
-
-    }
-
-    public void showException (String functionName, Exception e) {
-        System.out.println ("\n------------------\n Exception Details \n------------------");
-        System.out.println ("Function Name: " + functionName);
-        System.out.println ("Source file name: TestAbsurdHttpRequest.java");
-        System.out.println ("Exception: \n" + e .getMessage ());
-    }
-
     @Test
     public void testAbsurdHttpRequest() throws Exception {
         try {
 
-            beforeTest ("AbsurdHttpRequest");
+            beforeTest ("testAbsurdHttpRequest");
             httpClient.setQuery(absurdInput);
             String returnData = httpClient.sendPost();
             boolean returnResult = dbHandler.convertResponse(returnData);
@@ -59,7 +44,7 @@ public class TestAbsurdHttpRequest {
             assertFalse(returnResult);
         }
         catch(Exception e) {
-            showException ("AbsurdHttpRequest", e);
+            showException ("testAbsurdHttpRequest", e);
         }
     }
 }

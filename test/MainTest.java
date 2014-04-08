@@ -1,5 +1,4 @@
 import com.vidhi.sodemoapp.DBHandler;
-import com.vidhi.sodemoapp.HttpClient;
 import com.vidhi.sodemoapp.MainActivity;
 import com.vidhi.sodemoapp.QuestionInfo;
 import org.junit.Assert;
@@ -16,40 +15,25 @@ import java.util.ArrayList;
 
 @Config(emulateSdk = 18)
 @RunWith(RobolectricTestRunner.class)
-public class MainTest {
+public class MainTest extends DisplayTestInfo{
 
     private DBHandler dbHandler;
     private ArrayList<QuestionInfo> dummyObject;
-    private HttpClient httpClient;
     private MainActivity mainActivity;
 
     @Before
     public void setup() {
         mainActivity = Robolectric.buildActivity(MainActivity.class).create().get();
-        httpClient = new HttpClient();
         dbHandler = new DBHandler(mainActivity.getApplicationContext(), null, null, 1);
-        String rawData = readFile();
-        if (dbHandler.convertResponse(rawData)) {
+        String fileName = System.getProperty("fileName");
 
+        System.out.println("Reading dummy data file : " + fileName);
+        String rawData = readFile(fileName);
+        if (dbHandler.convertResponse(rawData)) {
             long returnID = dbHandler.addToMaster("html");
             dbHandler.storeData(returnID);
         }
         dummyObject = dbHandler.getQuestionInfos(); //get the object, the one that is added in db
-    }
-
-    public void beforeTest (String functionName) throws Exception {
-        System.out.println ("\n\n------------------\n Function Details \n------------------");
-        System.out.println ("Function Name: "+ functionName);
-        System.out.println ("Source file name: MainTest.java");
-        System.out.println ("Testing started...");
-
-    }
-
-    public void showException (String functionName, Exception e) {
-        System.out.println ("\n------------------\n Exception Details \n------------------");
-        System.out.println ("Function Name: "+ functionName);
-        System.out.println ("Source file name: MainTest.java");
-        System.out.println ("Exception: \n"+e.getMessage ());
     }
 
     @Test
@@ -65,8 +49,8 @@ public class MainTest {
     }
 
 
-    public String readFile(){
-        File file = new File("/Users/vidhi/work/testDummyHttpResponse.txt");
+    public String readFile(String filename){
+        File file = new File(filename);
         StringBuilder line = new StringBuilder();
         BufferedReader reader = null;
         try {

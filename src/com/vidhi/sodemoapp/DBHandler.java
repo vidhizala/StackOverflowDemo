@@ -178,14 +178,12 @@ public class DBHandler extends SQLiteOpenHelper {
         selectTableSearchCursor = localSQLiteDatabase.rawQuery("Select count(*) FROM " + TABLE_SEARCH_MASTER, null);
         selectTableSearchCursor.moveToFirst();
         count = selectTableSearchCursor.getInt(0);
-        Log.d("soappdemo", "" + count);
         if (count == 10) {
 
             selectTableSearchCursor = localSQLiteDatabase.rawQuery("Select min(" + COLUMN_MASTERID + ") FROM " + TABLE_SEARCH_MASTER, null);
             selectTableSearchCursor.moveToFirst();
 
             minID = selectTableSearchCursor.getInt(0);
-            Log.d("soappdemo", "minID=" + minID);
 
             localSQLiteDatabase.delete(TABLE_SEARCH_MASTER, COLUMN_MASTERID + "=" + minID, null);
         }
@@ -204,10 +202,10 @@ public class DBHandler extends SQLiteOpenHelper {
 
         ArrayList questionInfos = new ArrayList<QuestionInfo>();
 
-        String str1 = "Select * FROM " + TABLE_SEARCH_MASTER + " WHERE " + COLUMN_USERQUERY + " =\"" + userQuery + "\"";
+        String selectMasterTable = "Select * FROM " + TABLE_SEARCH_MASTER + " WHERE " + COLUMN_USERQUERY + " =\"" + userQuery + "\"";
         SQLiteDatabase db = getReadableDatabase();
 
-        Cursor searchMasterTable = db.rawQuery(str1, null);
+        Cursor searchMasterTable = db.rawQuery(selectMasterTable, null);
 
         QuestionInfo localQuestionInfo;
         String[] arrayOfString;
@@ -223,9 +221,9 @@ public class DBHandler extends SQLiteOpenHelper {
                     localQuestionInfo = new QuestionInfo();
                     localQuestionInfo.setQuestion(searchMasterTable.getString(1));
                     localQuestionInfo.setScore(searchMasterTable.getString(2));
-                    String str2 = "Select * FROM " + TABLE_TAGS + " WHERE " + COLUMN_TAG_QUE_REF + " = " + searchMasterTable.getString(0);
+                    String searchTagsTable = "Select * FROM " + TABLE_TAGS + " WHERE " + COLUMN_TAG_QUE_REF + " = " + searchMasterTable.getString(0);
                     arrayOfString = new String[5];
-                    tagsTableCursor = db.rawQuery(str2, null);
+                    tagsTableCursor = db.rawQuery(searchTagsTable, null);
                     if (tagsTableCursor.moveToFirst()) {
                         int count = 0;
                         tagsTableCursor.moveToFirst();
