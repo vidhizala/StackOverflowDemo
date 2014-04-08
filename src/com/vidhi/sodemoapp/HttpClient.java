@@ -47,7 +47,7 @@ public class HttpClient {
         Date date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy h:mm:ss a");
         String formattedDate = sdf.format(date);
-        Log.d("soappdemo","Post request starts:" + formattedDate);
+        Log.d(MainActivity.TAG,"Post request starts:" + formattedDate);
 
         try {
             DefaultHttpClient httpclient = new DefaultHttpClient();
@@ -59,7 +59,7 @@ public class HttpClient {
 
             long t = System.currentTimeMillis();
             HttpResponse response = (HttpResponse) httpclient.execute(httpPostRequest);
-            Log.d("soappdemo", "HTTPResponse received in [" + (System.currentTimeMillis()-t) + "ms]");
+            Log.d(MainActivity.TAG, "HTTPResponse received in [" + (System.currentTimeMillis()-t) + "ms]");
 
             // Get hold of the response entity (-> the data):
             HttpEntity entity = response.getEntity();
@@ -72,7 +72,7 @@ public class HttpClient {
                     instream = new GZIPInputStream(instream);
                 }
                 int statuscode = response.getStatusLine().getStatusCode();
-                Log.d("soappdemo", "status code ="+statuscode );
+                Log.d(MainActivity.TAG, "status code ="+statuscode );
 
                 this.setResponseCode(statuscode);
 
@@ -85,7 +85,7 @@ public class HttpClient {
         }
         catch (Exception e)
         {
-            Log.d("sodemoapp", "error :" + e.getMessage());
+            Log.d("sodemoapp", "Error occured: ", e);
         }
         return null;
 
@@ -108,15 +108,15 @@ public class HttpClient {
                 sb.append(line + "\n");
             }
         } catch (IOException e) {
-            Log.d("sodemoapp", "error :"+e.getMessage());
+            Log.d("sodemoapp", "error :", e);
         } finally {
             try {
                 is.close();
             } catch (IOException e) {
-               Log.d("sodemoapp", "error :"+e.getMessage());
+               Log.d("sodemoapp", "error :", e);
             }
         }
-        Log.d("soappdemo", "returning string ="+sb.toString());
+        Log.d(MainActivity.TAG, "returning string ="+sb.toString());
 
         return sb.toString();
     }

@@ -15,9 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 
 public class DBHandler extends SQLiteOpenHelper {
     private static final String COLUMN_MASTERID = "masterid";
@@ -125,7 +123,7 @@ public class DBHandler extends SQLiteOpenHelper {
      * @return ID of the record entered in Master table. This ID will be useful as reference to add records in Questions and Tags table
      */
     public long addToMaster(String paramString) {
-        Log.d("soappdemo", "inside add to master");
+        Log.d(MainActivity.TAG, "inside add to master");
         long masterRefID = -1;
         if (!checkAndDeleteDuplicateEntry(paramString)) {
             // in case there is a duplicate that needs to be removed and there are 10 records, remove the duplicate one
@@ -149,11 +147,11 @@ public class DBHandler extends SQLiteOpenHelper {
      */
     public boolean checkAndDeleteDuplicateEntry(String paramString) {
 
-        Log.d("soappdemo", "inside check and delete duplicate entry");
+        Log.d(MainActivity.TAG, "inside check and delete duplicate entry");
         SQLiteDatabase localSQLiteDatabase = getWritableDatabase();
         Cursor searchMasterCursor = localSQLiteDatabase.rawQuery("Select * from " + TABLE_SEARCH_MASTER + " where " + COLUMN_USERQUERY + " = \"" + paramString + "\"", null);
         if (searchMasterCursor.moveToFirst()) {
-            Log.d("soappdemo", "Found duplicate. deleting...");
+            Log.d(MainActivity.TAG, "Found duplicate. deleting...");
             searchMasterCursor.moveToFirst();
             localSQLiteDatabase.delete(TABLE_SEARCH_MASTER, COLUMN_MASTERID + " = " + searchMasterCursor.getInt(0), null);
             searchMasterCursor.close();
@@ -169,7 +167,7 @@ public class DBHandler extends SQLiteOpenHelper {
      */
     public void checkAndDeleteOlderData() {
 
-        Log.d("soappdemo", "inside check and delete older data");
+        Log.d(MainActivity.TAG, "inside check and delete older data");
         SQLiteDatabase localSQLiteDatabase = getWritableDatabase();
         long minID;
         Cursor selectTableSearchCursor;
@@ -276,11 +274,11 @@ public class DBHandler extends SQLiteOpenHelper {
 
             }
         }else{
-            Log.d("soappdemo", "Call database");
+            Log.d(MainActivity.TAG, "Call database");
             questionInfos = fetchFromDatabase(getQuery());
             if (this.questionInfos.size() == 0)  //even local db doesn't have anything
             {
-                Log.d("soappdemo", "again null");
+                Log.d(MainActivity.TAG, "again null");
                 mainActivity.runOnUiThread(new Runnable() {
                     public void run() {
                         Toast localToast = Toast.makeText(mainActivity.getApplicationContext(), messageNoNetwork, 0);
@@ -304,21 +302,12 @@ public class DBHandler extends SQLiteOpenHelper {
         if(questionInfos == null){
             questionInfos = new ArrayList<QuestionInfo>();
         }
-
-        Date date = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy h:mm:ss a");
-        String formattedDate = sdf.format(date);
-
-        Log.d("soappdemo", "Parsing start: "+ formattedDate);
         try {
 
             JSONObject jObject = new JSONObject(returnData);
             JSONArray jsonArray = jObject.getJSONArray("questions");
 
-            Log.d("soappdemo", "Here -" + jsonArray.length());
-
             if (jsonArray.length() == 0) { //empty questions array in case of absurd search query.
-
                 return false;
             }
 
@@ -341,14 +330,10 @@ public class DBHandler extends SQLiteOpenHelper {
             }
 
         } catch (JSONException e) {
-            Log.d("soappdemo", "Exception occured", e);
+            Log.d(MainActivity.TAG, "Exception occured", e);
 
            return false;
         }
-        Date date2 = new Date();
-        SimpleDateFormat sdf2 = new SimpleDateFormat("MM/dd/yyyy h:mm:ss a");
-        String formattedDate2 = sdf2.format(date2);
-        Log.d("soappdemo", "Parsing ends: "+formattedDate2);
 
         return true;
 
@@ -364,18 +349,9 @@ public class DBHandler extends SQLiteOpenHelper {
      */
     public void storeData(long paramLong) {
 
-        Date date2 = new Date();
-        SimpleDateFormat sdf2 = new SimpleDateFormat("MM/dd/yyyy h:mm:ss a");
-        String formattedDate2 = sdf2.format(date2);
-        Log.d("soappdemo","Store db starts:"+formattedDate2);
-
         for (int i = 0; i < questionInfos.size(); i++)
             addQuestion((QuestionInfo) questionInfos.get(i), paramLong);
 
-        Date date = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy h:mm:ss a");
-        String formattedDate = sdf.format(date);
-        Log.d("soappdemo","Store db ends:"+formattedDate);
 
 
     }

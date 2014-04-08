@@ -17,6 +17,8 @@ import android.widget.SearchView;
 import java.util.ArrayList;
 
 public class MainActivity extends Activity implements OnItemClickListener {
+
+    public final static String TAG = "SODemoDebug";
     CustomListViewAdapter adapter;
     ListView listView;
     ProgressDialog mProgressDialog = null;
@@ -65,14 +67,9 @@ public class MainActivity extends Activity implements OnItemClickListener {
     private void getDataForList() {
         try {
             this.questionInfos = dBHandler.sendRequest(this.query, this);
-
             runOnUiThread(this.returnRes);
         } catch (Exception localException) {
-            while (true)
-                if (localException.getMessage() != null)
-                    Log.d("soappdemo", localException.getMessage());
-                else
-                    Log.d("soappdemo", "Dragons!!!");
+            Log.d(TAG, "Error occured : ", localException);
         }
     }
 
@@ -81,9 +78,7 @@ public class MainActivity extends Activity implements OnItemClickListener {
      */
     private Runnable returnRes = new Runnable() {
         public void run() {
-            Log.d("sobot","clearing adapter");
             MainActivity.this.adapter.clear();
-            Log.d("sobot", "adapter cleared");
 
             if ((MainActivity.this.questionInfos != null) && (MainActivity.this.questionInfos.size() > 0)) {
                 MainActivity.this.adapter.notifyDataSetChanged();
