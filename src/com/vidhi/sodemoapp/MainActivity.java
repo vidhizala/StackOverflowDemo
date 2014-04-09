@@ -120,13 +120,12 @@ public class MainActivity extends Activity implements OnItemClickListener {
         @Override
         public boolean onQueryTextSubmit(String userQuery) {
             //cleanse user input and strip off any preceding or trailing white spaces
-            query = userQuery.replaceAll("\\s+", "");
+            query = userQuery.replace("\"","\\\"");
             searchView.clearFocus();
             startGetDataForList();
             return true;
         }
     };
-
 
     /**
      * Does nothing for now. For future extension

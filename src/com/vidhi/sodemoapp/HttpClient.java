@@ -8,13 +8,17 @@ import android.util.Log;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 public class HttpClient {
@@ -42,13 +46,17 @@ public class HttpClient {
      */
     public String sendPost() {
 
+        DefaultHttpClient httpClient = new DefaultHttpClient();
         try {
-            DefaultHttpClient httpClient = new DefaultHttpClient();
-            HttpPost httpPostRequest = new HttpPost("http://api.stackoverflow.com/1.1/search?intitle="+this.getQuery());
+            HttpPost httpPostRequest = new HttpPost("http://api.stackoverflow.com/1.1/search");
 
             // Set HTTP parameters
+            List formparams = new ArrayList();
+            formparams.add(new BasicNameValuePair("intitle", this.getQuery()));
+            UrlEncodedFormEntity entityParam = new UrlEncodedFormEntity(formparams, "UTF-8");
+            httpPostRequest.setEntity(entityParam);
+            httpPostRequest.addHeader("Content-Type","application/x-www-form-urlencoded");
             httpPostRequest.setHeader("Accept", "application/json");
-            httpPostRequest.setHeader("Content-type", "application/json");
 
             long t = System.currentTimeMillis();
             HttpResponse response = (HttpResponse) httpClient.execute(httpPostRequest);
@@ -65,7 +73,7 @@ public class HttpClient {
                     inputStream = new GZIPInputStream(inputStream);
                 }
                 int statusCode = response.getStatusLine().getStatusCode();
-                Log.d(MainActivity.TAG, "status code ="+statusCode );
+                Log.d(MainActivity.TAG, "status code ="+statusCode);
 
                 this.setResponseCode(statusCode);
 
@@ -75,10 +83,12 @@ public class HttpClient {
                 return resultString;
             }
 
-        }
-        catch (Exception e)
+        }catch (Exception e)
         {
             Log.d(MainActivity.TAG, "Error occured: ", e);
+
+        }finally{
+            httpClient.getConnectionManager().shutdown();
         }
         return null;
 
