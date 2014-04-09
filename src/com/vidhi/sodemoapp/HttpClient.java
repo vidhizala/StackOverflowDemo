@@ -15,8 +15,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.zip.GZIPInputStream;
 
 public class HttpClient {
@@ -44,13 +42,8 @@ public class HttpClient {
      */
     public String sendPost() {
 
-        Date date = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy h:mm:ss a");
-        String formattedDate = sdf.format(date);
-        Log.d(MainActivity.TAG,"Post request starts:" + formattedDate);
-
         try {
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            DefaultHttpClient httpClient = new DefaultHttpClient();
             HttpPost httpPostRequest = new HttpPost("http://api.stackoverflow.com/1.1/search?intitle="+this.getQuery());
 
             // Set HTTP parameters
@@ -58,7 +51,7 @@ public class HttpClient {
             httpPostRequest.setHeader("Content-type", "application/json");
 
             long t = System.currentTimeMillis();
-            HttpResponse response = (HttpResponse) httpclient.execute(httpPostRequest);
+            HttpResponse response = (HttpResponse) httpClient.execute(httpPostRequest);
             Log.d(MainActivity.TAG, "HTTPResponse received in [" + (System.currentTimeMillis()-t) + "ms]");
 
             // Get hold of the response entity (-> the data):
@@ -66,33 +59,33 @@ public class HttpClient {
 
             if (entity != null) {
                 // Read the content stream
-                InputStream instream = entity.getContent();
+                InputStream inputStream = entity.getContent();
                 Header contentEncoding = response.getFirstHeader("Content-Encoding");
                 if (contentEncoding != null && contentEncoding.getValue().equalsIgnoreCase("gzip")) {
-                    instream = new GZIPInputStream(instream);
+                    inputStream = new GZIPInputStream(inputStream);
                 }
-                int statuscode = response.getStatusLine().getStatusCode();
-                Log.d(MainActivity.TAG, "status code ="+statuscode );
+                int statusCode = response.getStatusLine().getStatusCode();
+                Log.d(MainActivity.TAG, "status code ="+statusCode );
 
-                this.setResponseCode(statuscode);
+                this.setResponseCode(statusCode);
 
                 // convert content stream to a String
-                String resultString= convertStreamToString(instream);
-                instream.close();
+                String resultString= convertStreamToString(inputStream);
+                inputStream.close();
                 return resultString;
             }
 
         }
         catch (Exception e)
         {
-            Log.d("sodemoapp", "Error occured: ", e);
+            Log.d(MainActivity.TAG, "Error occured: ", e);
         }
         return null;
 
 
     }
 
-    private static String convertStreamToString(InputStream is) {
+    private static String convertStreamToString(InputStream inputStream) {
 		/*
 		 * To convert the InputStream to String we use the BufferedReader.readLine()
 		 * method. We iterate until the BufferedReader return null which means
@@ -100,25 +93,23 @@ public class HttpClient {
 		 * and returned as String.
 		 *
 		 */
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        StringBuilder stringBuilder = new StringBuilder();
         String line = null;
         try {
             while ((line = reader.readLine()) != null) {
-                sb.append(line + "\n");
+                stringBuilder.append(line + "\n");
             }
         } catch (IOException e) {
-            Log.d("sodemoapp", "error :", e);
+            Log.d(MainActivity.TAG, "error :", e);
         } finally {
             try {
-                is.close();
+                inputStream.close();
             } catch (IOException e) {
-               Log.d("sodemoapp", "error :", e);
+               Log.d(MainActivity.TAG, "error :", e);
             }
         }
-        Log.d(MainActivity.TAG, "returning string ="+sb.toString());
-
-        return sb.toString();
+        return stringBuilder.toString();
     }
 
 
