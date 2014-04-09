@@ -254,6 +254,7 @@ public class DBHandler extends SQLiteOpenHelper {
         setQuery(query);
         httpClient.setResponseCode(0);
         httpClient.setQuery(query);
+        httpClient.setUrl("http://api.stackoverflow.com/1.1/search");
 
         String response = httpClient.sendPost();
 

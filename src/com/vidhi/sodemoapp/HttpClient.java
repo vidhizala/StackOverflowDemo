@@ -24,6 +24,7 @@ import java.util.zip.GZIPInputStream;
 public class HttpClient {
 
     private String query;
+    private String url;
     private int responseCode;
 
     public int getResponseCode() {
@@ -38,6 +39,12 @@ public class HttpClient {
     public void setQuery(String query) {
         this.query = query;
     }
+    public String getUrl() {
+        return url;
+    }
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
     /**
      * Function to send http request to API wit user's search string
@@ -48,7 +55,7 @@ public class HttpClient {
 
         DefaultHttpClient httpClient = new DefaultHttpClient();
         try {
-            HttpPost httpPostRequest = new HttpPost("http://api.stackoverflow.com/1.1/search");
+            HttpPost httpPostRequest = new HttpPost(this.getUrl());
 
             // Set HTTP parameters
             List formparams = new ArrayList();

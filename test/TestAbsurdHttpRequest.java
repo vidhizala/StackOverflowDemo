@@ -38,6 +38,7 @@ public class TestAbsurdHttpRequest extends DisplayTestInfo{
         try {
 
             beforeTest ("testAbsurdHttpRequest");
+            httpClient.setUrl("http://api.stackoverflow.com/1.1/search");
             httpClient.setQuery(absurdInput);
             String returnData = httpClient.sendPost();
             boolean returnResult = dbHandler.convertResponse(returnData);

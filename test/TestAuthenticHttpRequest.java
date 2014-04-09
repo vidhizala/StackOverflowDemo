@@ -40,6 +40,7 @@ public class TestAuthenticHttpRequest extends DisplayTestInfo{
     public void testAuthenticHttpRequest() throws Exception {
         try {
             beforeTest ("testAuthenticHttpRequest");
+            httpClient.setUrl("http://api.stackoverflow.com/1.1/search");
             httpClient.setResponseCode(0);
             httpClient.setQuery("java");
             String returnData = httpClient.sendPost();
