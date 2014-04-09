@@ -1,4 +1,5 @@
 {
+testMockHttpResponseAbsurdQuery: {
  "total": 104416,
  "page": 1,
  "pagesize": 30,
@@ -857,4 +858,11 @@
    "title": "Listing mysqli table entries in html using php"
   }
  ]
+},
+testMockHttpRequestAbsurdQuery: {
+ "total": 0,
+ "page": 1,
+ "pagesize": 30,
+ "questions": []
+}
 }

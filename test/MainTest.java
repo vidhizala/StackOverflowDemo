@@ -1,6 +1,8 @@
 import com.vidhi.sodemoapp.DBHandler;
 import com.vidhi.sodemoapp.MainActivity;
 import com.vidhi.sodemoapp.QuestionInfo;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,34 +22,52 @@ public class MainTest extends DisplayTestInfo{
     private DBHandler dbHandler;
     private ArrayList<QuestionInfo> dummyObject;
     private MainActivity mainActivity;
+    private String fileName;
+    private JSONObject jObject;
 
     @Before
     public void setup() {
         mainActivity = Robolectric.buildActivity(MainActivity.class).create().get();
         dbHandler = new DBHandler(mainActivity.getApplicationContext(), null, null, 1);
-        String fileName = System.getProperty("fileName");
+        fileName = System.getProperty("fileName");
 
-        System.out.println("Reading dummy data file : " + fileName);
         String rawData = readFile(fileName);
-        if (dbHandler.convertResponse(rawData)) {
-            long returnID = dbHandler.addToMaster("html");
-            dbHandler.storeData(returnID);
+        try {
+            jObject = new JSONObject(rawData);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
-        dummyObject = dbHandler.getQuestionInfos(); //get the object, the one that is added in db
+        System.out.println("Reading dummy data file : " + fileName);
+
     }
 
     @Test
-    public void testGetHttpResponse() throws Exception{
+    public void testMockHttpResponseAbsurdQuery() throws Exception{
 
-        beforeTest("testGetHttpResponse");
+        beforeTest("testMockHttpResponseAbsurdQuery");
         try{
+            if (dbHandler.convertResponse(jObject.get("testMockHttpResponseAbsurdQuery").toString())) {
+                long returnID = dbHandler.addToMaster("html");
+                dbHandler.storeData(returnID);
+            }
+            dummyObject = dbHandler.getQuestionInfos(); //get the object, the one that is added in db
             ArrayList<QuestionInfo> dbFetchedObject = dbHandler.fetchFromDatabase("html"); //get data from db and convert it to object for comparison
             Assert.assertEquals(dummyObject, dbFetchedObject);
         }catch(Exception e){
-            showException ("testGetHttpResponse", e);
+            showException ("testMockHttpResponseAbsurdQuery", e);
         }
     }
 
+    @Test
+    public void testMockHttpRequestAbsurdQuery() throws Exception{
+
+        beforeTest("testMockHttpRequestAbsurdQuery");
+        try{
+           Assert.assertFalse(dbHandler.convertResponse(jObject.get("testMockHttpRequestAbsurdQuery").toString()));
+        }catch(Exception e){
+            showException ("testMockHttpRequestAbsurdQuery", e);
+        }
+    }
 
     public String readFile(String filename){
         File file = new File(filename);
@@ -80,9 +100,5 @@ public class MainTest extends DisplayTestInfo{
         }
         return line.toString();
     }
-
-
-
-
 
 }
