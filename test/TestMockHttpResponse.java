@@ -17,7 +17,7 @@ import java.util.ArrayList;
 
 @Config(emulateSdk = 18)
 @RunWith(RobolectricTestRunner.class)
-public class MainTest extends DisplayTestInfo{
+public class TestMockHttpResponse extends DisplayTestInfo{
 
     private DBHandler dbHandler;
     private ArrayList<QuestionInfo> dummyObject;
