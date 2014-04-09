@@ -27,6 +27,7 @@ public class TestMockHttpResponse extends DisplayTestInfo{
 
     @Before
     public void setup() {
+        setFileName(this.getClass().getName());
         mainActivity = Robolectric.buildActivity(MainActivity.class).create().get();
         dbHandler = new DBHandler(mainActivity.getApplicationContext(), null, null, 1);
         fileName = System.getProperty("fileName");

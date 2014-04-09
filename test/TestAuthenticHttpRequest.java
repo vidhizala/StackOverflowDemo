@@ -25,7 +25,7 @@ public class TestAuthenticHttpRequest extends DisplayTestInfo{
     @Before
     public void setup() {
 
-
+        setFileName(this.getClass().getName());
         Robolectric.getFakeHttpLayer().interceptHttpRequests(false);
         Robolectric.getFakeHttpLayer().interceptResponseContent(false);
 
@@ -40,6 +40,7 @@ public class TestAuthenticHttpRequest extends DisplayTestInfo{
     public void testAuthenticHttpRequest() throws Exception {
         try {
             beforeTest ("testAuthenticHttpRequest");
+            httpClient.setResponseCode(0);
             httpClient.setQuery("java");
             String returnData = httpClient.sendPost();
             assertThat(httpClient.getResponseCode(), equalTo(200));

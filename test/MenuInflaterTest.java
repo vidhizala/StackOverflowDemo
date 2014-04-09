@@ -29,6 +29,7 @@ public class MenuInflaterTest extends DisplayTestInfo{
 
     @Before
     public void setup() {
+        setFileName(this.getClass().getName());
         mainActivity = Robolectric.buildActivity(MainActivity.class).create().get();
         context = mainActivity.getApplication();
     }

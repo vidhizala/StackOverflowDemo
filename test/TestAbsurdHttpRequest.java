@@ -25,6 +25,7 @@ public class TestAbsurdHttpRequest extends DisplayTestInfo{
 
     @Before
     public void setup() {
+        setFileName(this.getClass().getName());
         Robolectric.getFakeHttpLayer().interceptHttpRequests(false);
         Robolectric.getFakeHttpLayer().interceptResponseContent(false);
         mainActivity = Robolectric.buildActivity(MainActivity.class).create().get();
