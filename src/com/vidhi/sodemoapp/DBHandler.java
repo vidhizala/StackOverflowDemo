@@ -252,6 +252,7 @@ public class DBHandler extends SQLiteOpenHelper {
         final MainActivity mainActivity = context;
 
         setQuery(query);
+        httpClient.setResponseCode(0);
         httpClient.setQuery(query);
 
         String response = httpClient.sendPost();
