@@ -12,6 +12,9 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -53,7 +56,11 @@ public class HttpClient {
      */
     public String sendPost() {
 
-        DefaultHttpClient httpClient = new DefaultHttpClient();
+        HttpParams params = new BasicHttpParams();
+        HttpConnectionParams.setConnectionTimeout(params, 3000);
+        HttpConnectionParams.setSoTimeout(params, 10000);
+
+        DefaultHttpClient httpClient = new DefaultHttpClient(params);
         try {
             HttpPost httpPostRequest = new HttpPost(this.getUrl());
 
@@ -62,7 +69,7 @@ public class HttpClient {
             formparams.add(new BasicNameValuePair("intitle", this.getQuery()));
             UrlEncodedFormEntity entityParam = new UrlEncodedFormEntity(formparams, "UTF-8");
             httpPostRequest.setEntity(entityParam);
-            httpPostRequest.addHeader("Content-Type","application/x-www-form-urlencoded");
+            httpPostRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
             httpPostRequest.setHeader("Accept", "application/json");
 
             long t = System.currentTimeMillis();
