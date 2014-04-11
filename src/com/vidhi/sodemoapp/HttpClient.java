@@ -4,12 +4,14 @@ package com.vidhi.sodemoapp;
  * Created by vidhi on 3/24/14.
  */
 
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
@@ -21,95 +23,98 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 public class HttpClient {
 
-    private String query;
-    private String url;
-    private int responseCode;
+/**
+ * Function to send http request to API wit user's search string
+ * Response returned is first converted to an array of QuestionInfos and then passed to dbHandler for storing in database
+ *
+ */
+public void sendHttpRequest(final String method, final String url, final HashMap data, final Handler successHandler, final Handler failureHandler) {
 
-    public int getResponseCode() {
-        return responseCode;
-    }
-    public void setResponseCode(int responseCode) {
-        this.responseCode = responseCode;
-    }
-    public String getQuery() {
-        return query;
-    }
-    public void setQuery(String query) {
-        this.query = query;
-    }
-    public String getUrl() {
-        return url;
-    }
-    public void setUrl(String url) {
-        this.url = url;
-    }
+    new Thread(new Runnable() {
+        public void run() {
 
-    /**
-     * Function to send http request to API wit user's search string
-     * Response returned is first converted to an array of QuestionInfos and then passed to dbHandler for storing in database
-     *
-     */
-    public String sendPost() {
+            HttpParams httpParams = new BasicHttpParams();
+            HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
+            HttpConnectionParams.setSoTimeout(httpParams, 10000);
+            org.apache.http.client.HttpClient httpClient = new DefaultHttpClient(httpParams);
+            HttpResponse response = null;
 
-        HttpParams params = new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(params, 3000);
-        HttpConnectionParams.setSoTimeout(params, 10000);
+            try {
+                    if(method == "GET"){
 
-        DefaultHttpClient httpClient = new DefaultHttpClient(params);
-        try {
-            HttpPost httpPostRequest = new HttpPost(this.getUrl());
+                        // Set HTTP parameters
+                        List formparams = new ArrayList();
+                        formparams.add(new BasicNameValuePair("intitle", data.get("query").toString()));
+                        formparams.add(new BasicNameValuePair("site", data.get("site").toString()));
+                        String paramString = URLEncodedUtils.format(formparams, "utf-8");
 
-            // Set HTTP parameters
-            List formparams = new ArrayList();
-            formparams.add(new BasicNameValuePair("intitle", this.getQuery()));
-            UrlEncodedFormEntity entityParam = new UrlEncodedFormEntity(formparams, "UTF-8");
-            httpPostRequest.setEntity(entityParam);
-            httpPostRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
-            httpPostRequest.setHeader("Accept", "application/json");
+                        HttpGet httpGetRequest = new HttpGet(url+paramString);
+                        httpGetRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
+                        httpGetRequest.setHeader("Accept", "application/json");
 
-            long t = System.currentTimeMillis();
-            HttpResponse response = (HttpResponse) httpClient.execute(httpPostRequest);
-            Log.d(MainActivity.TAG, "HTTPResponse received in [" + (System.currentTimeMillis()-t) + "ms]");
+                        long t = System.currentTimeMillis();
+                        response = (HttpResponse) httpClient.execute(httpGetRequest);
+                        Log.d(MainActivity.TAG, "HTTPResponse received in [" + (System.currentTimeMillis()-t) + "ms]");
 
-            // Get hold of the response entity (-> the data):
-            HttpEntity entity = response.getEntity();
+                        int responseCode = response.getStatusLine().getStatusCode();
+                        Log.d(MainActivity.TAG, "status code =" + responseCode);
 
-            if (entity != null) {
-                // Read the content stream
-                InputStream inputStream = entity.getContent();
-                Header contentEncoding = response.getFirstHeader("Content-Encoding");
-                if (contentEncoding != null && contentEncoding.getValue().equalsIgnoreCase("gzip")) {
-                    inputStream = new GZIPInputStream(inputStream);
-                }
-                int statusCode = response.getStatusLine().getStatusCode();
-                Log.d(MainActivity.TAG, "status code ="+statusCode);
+                        HttpEntity entity = response.getEntity();
 
-                this.setResponseCode(statusCode);
+                        if (entity != null) {
+                            // Read the content stream
+                            InputStream inputStream = entity.getContent();
+                            Header contentEncoding = response.getFirstHeader("Content-Encoding");
+                            if (contentEncoding != null && contentEncoding.getValue().equalsIgnoreCase("gzip")) {
+                                inputStream = new GZIPInputStream(inputStream);
+                            }
 
-                // convert content stream to a String
-                String resultString= convertStreamToString(inputStream);
-                inputStream.close();
-                return resultString;
+                            String resultString = null;
+
+                            try{
+                                // convert content stream to a String
+                                resultString = convertStreamToString(inputStream);
+                            }catch(Exception e){
+                                HashMap messageResponse = new HashMap();
+                                messageResponse.put("responseCode", responseCode);
+                                Message httpMessage = failureHandler.obtainMessage();
+                                httpMessage.obj = messageResponse;
+                                failureHandler.sendMessage(httpMessage);
+
+                            }finally{
+                                inputStream.close();
+                            }
+                            HashMap messageResponse = new HashMap();
+                            messageResponse.put("responseCode", responseCode);
+                            messageResponse.put("response", resultString);
+                            Message httpMessage = successHandler.obtainMessage();
+                            httpMessage.obj = messageResponse;
+                            successHandler.sendMessage(httpMessage);
+                         }
+                    }
+
+            }catch (Exception e){
+                Log.d(MainActivity.TAG, "Error occured: ", e);
+                HashMap messageResponse = new HashMap();
+                messageResponse.put("responseCode", 0);
+                Message httpMessage = failureHandler.obtainMessage();
+                httpMessage.obj = messageResponse;
+                failureHandler.sendMessage(httpMessage);
+            }finally{
+                httpClient.getConnectionManager().shutdown();
             }
-
-        }catch (Exception e)
-        {
-            Log.d(MainActivity.TAG, "Error occured: ", e);
-
-        }finally{
-            httpClient.getConnectionManager().shutdown();
         }
-        return null;
 
+    }).start();
+}
 
-    }
-
-    private static String convertStreamToString(InputStream inputStream) {
+    private static String convertStreamToString(InputStream inputStream) throws IOException {
 		/*
 		 * To convert the InputStream to String we use the BufferedReader.readLine()
 		 * method. We iterate until the BufferedReader return null which means
@@ -120,19 +125,10 @@ public class HttpClient {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         StringBuilder stringBuilder = new StringBuilder();
         String line = null;
-        try {
-            while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line + "\n");
-            }
-        } catch (IOException e) {
-            Log.d(MainActivity.TAG, "error :", e);
-        } finally {
-            try {
-                inputStream.close();
-            } catch (IOException e) {
-               Log.d(MainActivity.TAG, "error :", e);
-            }
+        while ((line = reader.readLine()) != null) {
+            stringBuilder.append(line + "\n");
         }
+        inputStream.close();
         return stringBuilder.toString();
     }
 
