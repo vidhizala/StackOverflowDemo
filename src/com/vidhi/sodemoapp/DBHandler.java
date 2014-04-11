@@ -10,14 +10,15 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
-import android.widget.Toast;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 
 public class DBHandler extends SQLiteOpenHelper {
+
+    enum COLUMNS_MASTER{ COLUMN_MASTERID, COLUMN_USERQUERY };
+    enum COLUMNS_QUESTIONS{ COLUMN_QID, COLUMN_QUESTIONTITLE, COLUMN_QUESTIONSCORE, COLUMN_MASTER_REF };
+    enum COLUMNS_TAGS{ COLUMN_TAG_ID, COLUMN_TAG_TITLE, COLUMN_TAG_QUE_REF };
+
     private static final String COLUMN_MASTERID = "masterid";
     private static final String COLUMN_MASTER_REF = "masterref";
     private static final String COLUMN_QID = "questionid";
@@ -33,17 +34,10 @@ public class DBHandler extends SQLiteOpenHelper {
     private static final String TABLE_SEARCH_MASTER = "master";
     private static final String TABLE_TAGS = "tags";
 
-    private HttpClient httpClient;
-    private ArrayList<QuestionInfo> questionInfos;
-    private String query;
-    private String messageAbsurdQuery = "No results found matching your query. Please check spelling and try again.";
-    private String messageNoNetwork = "No Response from Server. Please check your connectivity and try again.";
 
     public DBHandler(Context paramContext, String paramString, SQLiteDatabase.CursorFactory paramCursorFactory, int paramInt) {
 
-        super(paramContext, DATABASE_NAME, paramCursorFactory, paramInt);
-        httpClient = new HttpClient();
-        questionInfos = new ArrayList<QuestionInfo>();
+        super(paramContext, DATABASE_NAME, paramCursorFactory, DATABASE_VERSION);
     }
 
     /**
@@ -56,21 +50,6 @@ public class DBHandler extends SQLiteOpenHelper {
         db.execSQL("PRAGMA foreign_keys = ON;");
     }
 
-    public ArrayList<QuestionInfo> getQuestionInfos() {
-        return questionInfos;
-    }
-
-    public void setQuestionInfos(ArrayList<QuestionInfo> questionInfos) {
-        this.questionInfos = questionInfos;
-    }
-
-    public String getQuery() {
-        return query;
-    }
-
-    public void setQuery(String query) {
-        this.query = query;
-    }
     @Override
     public void onCreate(SQLiteDatabase paramSQLiteDatabase) {
         paramSQLiteDatabase.execSQL("CREATE TABLE " + TABLE_SEARCH_MASTER + "( " + COLUMN_MASTERID + " INTEGER primary key autoincrement, " + COLUMN_USERQUERY + " TEXT )");
@@ -149,10 +128,9 @@ public class DBHandler extends SQLiteOpenHelper {
 
         Log.d(MainActivity.TAG, "inside check and delete duplicate entry");
         SQLiteDatabase localSQLiteDatabase = getWritableDatabase();
-        Cursor searchMasterCursor = localSQLiteDatabase.rawQuery("Select * from " + TABLE_SEARCH_MASTER + " where " + COLUMN_USERQUERY + " = \"" + paramString + "\"", null);
+        Cursor searchMasterCursor = localSQLiteDatabase.query(TABLE_SEARCH_MASTER,new String[] { COLUMN_MASTERID }, COLUMN_USERQUERY + "=\"" + paramString + "\"", null, null,null,null);
         if (searchMasterCursor.moveToFirst()) {
             Log.d(MainActivity.TAG, "Found duplicate. deleting...");
-            searchMasterCursor.moveToFirst();
             localSQLiteDatabase.delete(TABLE_SEARCH_MASTER, COLUMN_MASTERID + " = " + searchMasterCursor.getInt(0), null);
             searchMasterCursor.close();
             localSQLiteDatabase.close();
@@ -173,14 +151,12 @@ public class DBHandler extends SQLiteOpenHelper {
         Cursor selectTableSearchCursor;
         int count;
 
-        selectTableSearchCursor = localSQLiteDatabase.rawQuery("Select count(*) FROM " + TABLE_SEARCH_MASTER, null);
-        selectTableSearchCursor.moveToFirst();
-        count = selectTableSearchCursor.getInt(0);
+        selectTableSearchCursor = localSQLiteDatabase.query(TABLE_SEARCH_MASTER, null, null, null, null, null, null);
+        count = selectTableSearchCursor.getCount();
         if (count == 10) {
 
-            selectTableSearchCursor = localSQLiteDatabase.rawQuery("Select min(" + COLUMN_MASTERID + ") FROM " + TABLE_SEARCH_MASTER, null);
+            selectTableSearchCursor = localSQLiteDatabase.query(TABLE_SEARCH_MASTER, new String[] { "min(" + COLUMN_MASTERID + ")" }, null, null, null, null, null);
             selectTableSearchCursor.moveToFirst();
-
             minID = selectTableSearchCursor.getInt(0);
 
             localSQLiteDatabase.delete(TABLE_SEARCH_MASTER, COLUMN_MASTERID + "=" + minID, null);
@@ -199,163 +175,43 @@ public class DBHandler extends SQLiteOpenHelper {
     public ArrayList<QuestionInfo> fetchFromDatabase(String userQuery) {
 
         ArrayList questionInfos = new ArrayList<QuestionInfo>();
-
-        String selectMasterTable = "Select * FROM " + TABLE_SEARCH_MASTER + " WHERE " + COLUMN_USERQUERY + " =\"" + userQuery + "\"";
         SQLiteDatabase db = getReadableDatabase();
-
-        Cursor searchMasterTable = db.rawQuery(selectMasterTable, null);
+        Cursor searchQuestionsTable = db.query(TABLE_SEARCH_MASTER, null, COLUMN_USERQUERY + " LIKE \"%" + userQuery + "%\"", null, null, null, null);
 
         QuestionInfo localQuestionInfo;
-        String[] arrayOfString;
+        String[] tempTagHolder;
         Cursor tagsTableCursor;
 
-        if (searchMasterTable.moveToFirst()) {
-            searchMasterTable.moveToFirst();
-            int i = new Integer(searchMasterTable.getInt(0));
-            searchMasterTable = db.rawQuery("SELECT * FROM " + TABLE_QUESTIONS + " WHERE " + COLUMN_MASTER_REF + "=" + i, null);
-            if (searchMasterTable.moveToFirst()) {
-                searchMasterTable.moveToFirst();
+        if (searchQuestionsTable.moveToFirst()) {
+            int i = new Integer(searchQuestionsTable.getInt(COLUMNS_QUESTIONS.COLUMN_QID.ordinal()));
+            searchQuestionsTable = db.query(TABLE_QUESTIONS, null, COLUMN_MASTER_REF + "=" + i, null, null, null, null);
+            if (searchQuestionsTable.moveToFirst()) {
                 do {
                     localQuestionInfo = new QuestionInfo();
-                    localQuestionInfo.setQuestion(searchMasterTable.getString(1));
-                    localQuestionInfo.setScore(searchMasterTable.getString(2));
-                    String searchTagsTable = "Select * FROM " + TABLE_TAGS + " WHERE " + COLUMN_TAG_QUE_REF + " = " + searchMasterTable.getString(0);
-                    arrayOfString = new String[5];
-                    tagsTableCursor = db.rawQuery(searchTagsTable, null);
+                    localQuestionInfo.setQuestion(searchQuestionsTable.getString(COLUMNS_QUESTIONS.COLUMN_QUESTIONTITLE.ordinal()));
+                    localQuestionInfo.setScore(searchQuestionsTable.getString(COLUMNS_QUESTIONS.COLUMN_QUESTIONSCORE.ordinal()));
+                    tempTagHolder = new String[5];
+                    tagsTableCursor = db.query(TABLE_TAGS, new String[] { COLUMN_TAG_TITLE }, COLUMN_TAG_QUE_REF + " = " + searchQuestionsTable.getString(COLUMNS_QUESTIONS.COLUMN_QID.ordinal()), null, null, null, null);
                     if (tagsTableCursor.moveToFirst()) {
                         int count = 0;
-                        tagsTableCursor.moveToFirst();
                         do {
-                            arrayOfString[count++] = tagsTableCursor.getString(1);
+                            tempTagHolder[count++] = tagsTableCursor.getString(0);
 
                         } while (tagsTableCursor.moveToNext());
                         tagsTableCursor.close();
 
                     }
-                    localQuestionInfo.setTags(arrayOfString);
+                    localQuestionInfo.setTags(tempTagHolder);
                     questionInfos.add(localQuestionInfo);
 
-                } while (searchMasterTable.moveToNext());
-                searchMasterTable.close();
+                } while (searchQuestionsTable.moveToNext());
+                searchQuestionsTable.close();
 
             }
         }
 
         db.close();
         return questionInfos;
-    }
-
-    public ArrayList sendRequest(String query, MainActivity context){
-
-        questionInfos = new ArrayList<QuestionInfo>();
-
-        final MainActivity mainActivity = context;
-
-        setQuery(query);
-        httpClient.setResponseCode(0);
-        httpClient.setQuery(query);
-        httpClient.setUrl("http://api.stackoverflow.com/1.1/search");
-
-        String response = httpClient.sendPost();
-
-        if(httpClient.getResponseCode() == 200){
-
-            if (convertResponse(response)) {
-
-                storeData(addToMaster(query));
-
-            }else{
-
-                mainActivity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        Toast localToast = Toast.makeText(mainActivity.getApplicationContext(), messageAbsurdQuery, 0);
-                        localToast.setGravity(18,0,0);
-                        localToast.show();
-                    }
-                });
-
-            }
-        }else{
-            Log.d(MainActivity.TAG, "Call database");
-            questionInfos = fetchFromDatabase(getQuery());
-            if (this.questionInfos.size() == 0)  //even local db doesn't have anything
-            {
-                Log.d(MainActivity.TAG, "again null");
-                mainActivity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        Toast localToast = Toast.makeText(mainActivity.getApplicationContext(), messageNoNetwork, 0);
-                        localToast.setGravity(18,0,0);
-                        localToast.show();
-                    }
-                });
-            }
-        }
-        return questionInfos;
-    }
-
-    /**
-     * Function to convert the response string obtained from HttpRequest sent
-     * Conversion results in  list of QuestionInfo objects which can be passed to dbHandler fro storing in database
-     *
-     * @param returnData
-     * @return
-     */
-    public boolean convertResponse(String returnData) {
-        if(questionInfos == null){
-            questionInfos = new ArrayList<QuestionInfo>();
-        }
-        try {
-
-            JSONObject jObject = new JSONObject(returnData);
-            JSONArray jsonArray = jObject.getJSONArray("questions");
-
-            if (jsonArray.length() == 0) { //empty questions array in case of absurd search query.
-                return false;
-            }
-
-            //Parse the JSon string obtained and fill up QuestionInfos array
-            for (int i = 0; i < jsonArray.length(); i++) {
-                QuestionInfo qInfo = new QuestionInfo();
-                String tempTags[] = new String[5];
-
-                JSONObject jObj = jsonArray.getJSONObject(i);
-                qInfo.setQuestion(jObj.get("title").toString());
-                qInfo.setScore(jObj.get("score").toString());
-
-                JSONArray tagsArray = jObj.getJSONArray("tags");
-                for (int j = 0; j < tagsArray.length(); j++) {
-
-                    tempTags[j] = tagsArray.get(j).toString();
-                }
-                qInfo.setTags(tempTags);
-                questionInfos.add(qInfo);
-            }
-
-        } catch (JSONException e) {
-            Log.d(MainActivity.TAG, "Exception occured", e);
-
-           return false;
-        }
-
-        return true;
-
-    }
-
-
-    /**
-     * Function to call dbHandler's method to store questions and their related tags in respective tables
-     *
-     * @param paramLong - Reference ID of the record stored in MasterTable. Used for saving questions related to this query
-     *                  <p/>
-     *
-     */
-    public void storeData(long paramLong) {
-
-        for (int i = 0; i < questionInfos.size(); i++)
-            addQuestion((QuestionInfo) questionInfos.get(i), paramLong);
-
-
-
     }
 
     @Override
