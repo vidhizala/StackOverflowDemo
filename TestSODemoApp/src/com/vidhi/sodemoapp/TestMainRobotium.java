@@ -25,7 +25,7 @@ public class TestMainRobotium extends ActivityInstrumentationTestCase2<MainActiv
         solo.clickOnView(searchView);
         solo.enterText(0, authenticQuery);
         solo.sendKey(Solo.ENTER);
-        Assert.assertTrue(solo.searchText("Please wait..."));
+        Assert.assertTrue(solo.searchText("Retrieving data... Please wait"));
         solo.sleep(1000);
 
     }

@@ -27,7 +27,7 @@ public class TestAbsurdQueryWithNetwork extends ActivityInstrumentationTestCase2
         solo.enterText(0, absurdInput);
         solo.sendKey(Solo.ENTER);
 
-        Assert.assertTrue(solo.searchText("Please wait..."));
+        Assert.assertTrue(solo.searchText("Retrieving data... Please wait"));
 
         assertTrue(solo.waitForText("No results found matching your query. Please check spelling and try again."));
 

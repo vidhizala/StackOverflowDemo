@@ -29,7 +29,7 @@ public class TestAuthenticQuery extends ActivityInstrumentationTestCase2<MainAct
         solo.enterText(0, authenticQuery);
         solo.sendKey(Solo.ENTER);
 
-        Assert.assertTrue(solo.searchText("Please wait..."));
+        Assert.assertTrue(solo.searchText("Retrieving data... Please wait"));
 
         solo.waitForView(R.id.list);
         solo.sleep(4000);
