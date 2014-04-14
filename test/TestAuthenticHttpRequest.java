@@ -1,4 +1,5 @@
-import com.vidhi.sodemoapp.DBHandler;
+import android.os.Handler;
+import android.os.Message;
 import com.vidhi.sodemoapp.HttpClient;
 import com.vidhi.sodemoapp.MainActivity;
 import org.junit.Before;
@@ -8,48 +9,49 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import java.util.HashMap;
 
+import static junit.framework.Assert.assertEquals;
 
 
 @Config(emulateSdk = 18)
 @RunWith(RobolectricTestRunner.class)
 public class TestAuthenticHttpRequest extends DisplayTestInfo{
 
-    private DBHandler dbHandler;
     private HttpClient httpClient;
     private MainActivity mainActivity;
 
     @Before
     public void setup() {
-
         setFileName(this.getClass().getName());
-        Robolectric.getFakeHttpLayer().interceptHttpRequests(false);
-        Robolectric.getFakeHttpLayer().interceptResponseContent(false);
 
         mainActivity = Robolectric.buildActivity(MainActivity.class).create().get();
+        Robolectric.getFakeHttpLayer().interceptHttpRequests(false);
+        Robolectric.getFakeHttpLayer().interceptResponseContent(false);
         httpClient = new HttpClient();
-        dbHandler = new DBHandler(mainActivity.getApplicationContext(), null, null, 1);
-
-
     }
 
     @Test
     public void testAuthenticHttpRequest() throws Exception {
         try {
+
             beforeTest ("testAuthenticHttpRequest");
-            httpClient.setUrl("http://api.stackoverflow.com/1.1/search");
-            httpClient.setResponseCode(0);
-            httpClient.setQuery("java");
-            String returnData = httpClient.sendPost();
-            assertThat(httpClient.getResponseCode(), equalTo(200));
-            boolean returnResult = dbHandler.convertResponse(returnData);
-            assertTrue(returnResult);
+            HashMap data = new HashMap();
+            data.put("query", "html");
+            data.put("site", "stackoverflow");
+            httpClient.sendHttpRequest("GET", "http://api.stackexchange.com/2.2/search?", data, dummyHandler, dummyHandler);
+            Thread.sleep(1000); // this timeout is necessary for preventing next test's http call to overlap this one
         }
         catch(Exception e) {
             showException ("testAuthenticHttpRequest", e);
         }
     }
+
+    private Handler dummyHandler = new Handler(){
+        public void handleMessage(Message msg) {
+            HashMap result = (HashMap) msg.obj;
+            int responseCode = Integer.parseInt(result.get("responseCode").toString());
+            assertEquals(responseCode, 200);
+        }
+    };
 }

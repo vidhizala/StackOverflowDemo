@@ -1,4 +1,4 @@
-import com.vidhi.sodemoapp.DBHandler;
+import com.vidhi.sodemoapp.DataController;
 import com.vidhi.sodemoapp.MainActivity;
 import com.vidhi.sodemoapp.QuestionInfo;
 import org.json.JSONException;
@@ -19,7 +19,7 @@ import java.util.ArrayList;
 @RunWith(RobolectricTestRunner.class)
 public class TestMockHttpResponse extends DisplayTestInfo{
 
-    private DBHandler dbHandler;
+    private DataController dataController;
     private ArrayList<QuestionInfo> dummyObject;
     private MainActivity mainActivity;
     private String fileName;
@@ -27,10 +27,11 @@ public class TestMockHttpResponse extends DisplayTestInfo{
 
     @Before
     public void setup() {
+
         setFileName(this.getClass().getName());
         mainActivity = Robolectric.buildActivity(MainActivity.class).create().get();
-        dbHandler = new DBHandler(mainActivity.getApplicationContext(), null, null, 1);
         fileName = System.getProperty("fileName");
+        dataController = new DataController(mainActivity);
 
         String rawData = readFile(fileName);
         try {
@@ -43,28 +44,12 @@ public class TestMockHttpResponse extends DisplayTestInfo{
     }
 
     @Test
-    public void testMockHttpResponseAbsurdQuery() throws Exception{
-
-        beforeTest("testMockHttpResponseAbsurdQuery");
-        try{
-            if (dbHandler.convertResponse(jObject.get("testMockHttpResponseAbsurdQuery").toString())) {
-                long returnID = dbHandler.addToMaster("html");
-                dbHandler.storeData(returnID);
-            }
-            dummyObject = dbHandler.getQuestionInfos(); //get the object, the one that is added in db
-            ArrayList<QuestionInfo> dbFetchedObject = dbHandler.fetchFromDatabase("html"); //get data from db and convert it to object for comparison
-            Assert.assertEquals(dummyObject, dbFetchedObject);
-        }catch(Exception e){
-            showException ("testMockHttpResponseAbsurdQuery", e);
-        }
-    }
-
-    @Test
     public void testMockHttpRequestAbsurdQuery() throws Exception{
 
         beforeTest("testMockHttpRequestAbsurdQuery");
         try{
-           Assert.assertFalse(dbHandler.convertResponse(jObject.get("testMockHttpRequestAbsurdQuery").toString()));
+            dummyObject = dataController.convertResponse(jObject.get("testMockHttpRequestAbsurdQuery").toString());
+            Assert.assertNull(dummyObject);
         }catch(Exception e){
             showException ("testMockHttpRequestAbsurdQuery", e);
         }
@@ -90,7 +75,7 @@ public class TestMockHttpResponse extends DisplayTestInfo{
         finally
         {
             try {
-                if (reader !=null){
+                if (reader != null){
                     reader.close();
                 }
             }
