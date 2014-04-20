@@ -4,8 +4,13 @@ package com.vidhi.sodemoapp;
  * Bean for storing information related to a particular question
  */
 public class QuestionInfo {
-    String questionText;
+   String questionText;
     String score;
+    String bodyMarkdown;
+    String page;
+    int upvoteCount;
+    int downVoteCount;
+    int questionID;
     String[] tags;
 
     public String getQuestion() {
@@ -20,16 +25,60 @@ public class QuestionInfo {
         return this.tags;
     }
 
-    public void setQuestion(String paramString) {
-        this.questionText = paramString;
+    public void setQuestion(String question) {
+        this.questionText = question;
     }
 
-    public void setScore(String paramString) {
-        this.score = paramString;
+    public void setScore(String score) {
+        this.score = score;
     }
 
-    public void setTags(String[] paramArrayOfString) {
-        this.tags = paramArrayOfString;
+    public void setTags(String[] tagsArray) {
+        this.tags = tagsArray;
+    }
+
+    public String getPage(){
+        return page;
+    }
+
+    public void setPage(String page){
+        this.page = page;
+    }
+
+    public String getBodyMarkdown(){
+        return bodyMarkdown;
+    }
+
+    public void setBodyMarkdown(String bodyMarkdown) {
+        this.bodyMarkdown = bodyMarkdown;
+    }
+
+    public int getUpvoteCount() {
+        return upvoteCount;
+    }
+
+    public void setUpvoteCount(int upvoteCount) {
+        this.upvoteCount = upvoteCount;
+    }
+
+    public int getDownVoteCount() {
+        return downVoteCount;
+    }
+
+    public void setDownVoteCount(int downVoteCount) {
+        this.downVoteCount = downVoteCount;
+    }
+
+    public int compareTo(QuestionInfo questionInfo) {
+        return page.compareTo(questionInfo.page);
+    }
+
+    public int getQuestionID() {
+        return questionID;
+    }
+
+    public void setQuestionID(int questionID) {
+        this.questionID = questionID;
     }
 
     @Override

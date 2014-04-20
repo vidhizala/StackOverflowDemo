@@ -34,103 +34,109 @@ public class HttpClient {
  * Response returned is first converted to an array of QuestionInfos and then passed to dbHandler for storing in database
  *
  */
-public void sendHttpRequest(final String method, final String url, final HashMap data, final Handler successHandler, final Handler failureHandler) {
+   public void sendHttpRequestforQuestions(final String method, final String url,
+                                            final HashMap data, final Handler successHandler,
+                                            final Handler failureHandler) {
 
-    new Thread(new Runnable() {
-        public void run() {
+        new Thread(new Runnable() {
+            public void run() {
 
-            HttpParams httpParams = new BasicHttpParams();
-            HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
-            HttpConnectionParams.setSoTimeout(httpParams, 10000);
-            org.apache.http.client.HttpClient httpClient = new DefaultHttpClient(httpParams);
-            HttpResponse response = null;
+                HttpParams httpParams = new BasicHttpParams();
+                HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
+                HttpConnectionParams.setSoTimeout(httpParams, 10000);
+                org.apache.http.client.HttpClient httpClient = new DefaultHttpClient(httpParams);
+                HttpResponse response;
 
-            try {
-                    if(method == "GET"){
+                try {
+                        if(method == "GET"){
 
-                        // Set HTTP parameters
-                        List formparams = new ArrayList();
-                        formparams.add(new BasicNameValuePair("intitle", data.get("query").toString()));
-                        formparams.add(new BasicNameValuePair("site", data.get("site").toString()));
-                        String paramString = URLEncodedUtils.format(formparams, "utf-8");
+                            // Set HTTP parameters
+                            List listArguments = new ArrayList();
 
-                        HttpGet httpGetRequest = new HttpGet(url+paramString);
-                        httpGetRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
-                        httpGetRequest.setHeader("Accept", "application/json");
+                            listArguments.add(new BasicNameValuePair("filter", data.get("filter").toString()));
+                            listArguments.add(new BasicNameValuePair("intitle", data.get("query").toString()));
+                            listArguments.add(new BasicNameValuePair("site", data.get("site").toString()));
+                            Log.d(MainActivity.TAG, "PageSize=" + data.get("pagesize").toString());
+                            listArguments.add(new BasicNameValuePair("pagesize", data.get("pagesize").toString()));
+                            listArguments.add(new BasicNameValuePair("page", data.get("page").toString()));
 
-                        long t = System.currentTimeMillis();
-                        response = (HttpResponse) httpClient.execute(httpGetRequest);
-                        Log.d(MainActivity.TAG, "HTTPResponse received in [" + (System.currentTimeMillis()-t) + "ms]");
+                            String paramString = URLEncodedUtils.format(listArguments, "utf-8");
 
-                        int responseCode = response.getStatusLine().getStatusCode();
-                        Log.d(MainActivity.TAG, "status code =" + responseCode);
+                            HttpGet httpGetRequest = new HttpGet(url+paramString);
+                            httpGetRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
+                            httpGetRequest.setHeader("Accept", "application/json");
 
-                        HttpEntity entity = response.getEntity();
+                            long t = System.currentTimeMillis();
+                            response = httpClient.execute(httpGetRequest);
+                            Log.d(MainActivity.TAG, "HTTPResponse received in [" + (System.currentTimeMillis()-t) + "ms]");
 
-                        if (entity != null) {
-                            // Read the content stream
-                            InputStream inputStream = entity.getContent();
-                            Header contentEncoding = response.getFirstHeader("Content-Encoding");
-                            if (contentEncoding != null && contentEncoding.getValue().equalsIgnoreCase("gzip")) {
-                                inputStream = new GZIPInputStream(inputStream);
-                            }
+                            int responseCode = response.getStatusLine().getStatusCode();
+                            Log.d(MainActivity.TAG, "status code =" + responseCode);
 
-                            String resultString = null;
+                            HttpEntity entity = response.getEntity();
+                            if (entity != null) {
+                                // Read the content stream
+                                InputStream inputStream = entity.getContent();
+                                Header contentEncoding = response.getFirstHeader("Content-Encoding");
+                                if (contentEncoding != null && contentEncoding.getValue().equalsIgnoreCase("gzip")) {
+                                    inputStream = new GZIPInputStream(inputStream);
+                                }
 
-                            try{
-                                // convert content stream to a String
-                                resultString = convertStreamToString(inputStream);
-                            }catch(Exception e){
+                                String resultString = null;
+
+                                try {
+                                    // convert content stream to a String
+                                    resultString = convertStreamToString(inputStream);
+                                } catch(Exception e) {
+                                    HashMap messageResponse = new HashMap();
+                                    messageResponse.put("responseCode", responseCode);
+                                    Message httpMessage = failureHandler.obtainMessage();
+                                    httpMessage.obj = messageResponse;
+                                    failureHandler.sendMessage(httpMessage);
+
+                                } finally {
+                                    inputStream.close();
+                                }
                                 HashMap messageResponse = new HashMap();
                                 messageResponse.put("responseCode", responseCode);
-                                Message httpMessage = failureHandler.obtainMessage();
+                                messageResponse.put("response", resultString);
+                                Message httpMessage = successHandler.obtainMessage();
                                 httpMessage.obj = messageResponse;
-                                failureHandler.sendMessage(httpMessage);
+                                successHandler.sendMessage(httpMessage);
+                             }
+                        }
 
-                            }finally{
-                                inputStream.close();
-                            }
-                            HashMap messageResponse = new HashMap();
-                            messageResponse.put("responseCode", responseCode);
-                            messageResponse.put("response", resultString);
-                            Message httpMessage = successHandler.obtainMessage();
-                            httpMessage.obj = messageResponse;
-                            successHandler.sendMessage(httpMessage);
-                         }
-                    }
-
-            }catch (Exception e){
-                Log.d(MainActivity.TAG, "Error occured: ", e);
-                HashMap messageResponse = new HashMap();
-                messageResponse.put("responseCode", 0);
-                Message httpMessage = failureHandler.obtainMessage();
-                httpMessage.obj = messageResponse;
-                failureHandler.sendMessage(httpMessage);
-            }finally{
-                httpClient.getConnectionManager().shutdown();
+                }catch (Exception e){
+                    Log.d(MainActivity.TAG, "Error occured: ", e);
+                    HashMap messageResponse = new HashMap();
+                    messageResponse.put("responseCode", 0);
+                    Message httpMessage = failureHandler.obtainMessage();
+                    httpMessage.obj = messageResponse;
+                    failureHandler.sendMessage(httpMessage);
+                }finally{
+                    httpClient.getConnectionManager().shutdown();
+                }
             }
-        }
 
-    }).start();
-}
+        }).start();
+    }
 
+
+    /**
+    * To convert the InputStream to String we use the BufferedReader.readLine()
+    * method. We iterate until the BufferedReader return null which means
+    * there's no more data to read. Each line will appended to a StringBuilder
+    * and returned as String.
+    *
+    */
     private static String convertStreamToString(InputStream inputStream) throws IOException {
-		/*
-		 * To convert the InputStream to String we use the BufferedReader.readLine()
-		 * method. We iterate until the BufferedReader return null which means
-		 * there's no more data to read. Each line will appended to a StringBuilder
-		 * and returned as String.
-		 *
-		 */
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         StringBuilder stringBuilder = new StringBuilder();
-        String line = null;
+        String line;
         while ((line = reader.readLine()) != null) {
             stringBuilder.append(line + "\n");
         }
         inputStream.close();
         return stringBuilder.toString();
     }
-
-
 }

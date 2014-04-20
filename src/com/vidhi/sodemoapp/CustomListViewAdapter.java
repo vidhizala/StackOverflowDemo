@@ -11,18 +11,48 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class CustomListViewAdapter extends ArrayAdapter<QuestionInfo> {
     Context context;
     ArrayList questionInfos;
 
-    public CustomListViewAdapter(Context paramContext, int paramInt, ArrayList<QuestionInfo> questionInfos) {
-        super(paramContext, paramInt, questionInfos);
+    public CustomListViewAdapter(Context context, int position, ArrayList<QuestionInfo> questionInfos) {
+        super(context, position, questionInfos);
 
         this.questionInfos = questionInfos;
 
-        this.context = paramContext;
+        this.context = context;
 
+    }
+
+ @Override
+    public void notifyDataSetChanged() {
+        Collections.sort(questionInfos, questionInfoComparator);
+        super.notifyDataSetChanged();
+    }
+
+    public Comparator questionInfoComparator = new Comparator<QuestionInfo>() {
+        @Override
+        public int compare(QuestionInfo questionInfo, QuestionInfo questionInfo2) {
+            return questionInfo.compareTo(questionInfo2);
+        }
+    };
+    public void removeIfExists(int page){
+        ArrayList tempQuestionInfos = new ArrayList();
+        QuestionInfo questionInfo;
+        int pageToCompare;
+        int sizeQuestionInfos = questionInfos.size();
+        for(int i=0 ;i < sizeQuestionInfos; i++){
+            questionInfo = (QuestionInfo) questionInfos.get(i);
+            pageToCompare = Integer.parseInt(questionInfo.getPage());
+            if((page != pageToCompare)){
+                tempQuestionInfos.add(questionInfos.get(i));
+            }
+        }
+        questionInfos.clear();
+        questionInfos.addAll(tempQuestionInfos);
     }
 
     /**
@@ -35,18 +65,17 @@ public class CustomListViewAdapter extends ArrayAdapter<QuestionInfo> {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         QuestionInfo qInfo = getItem(position);
-        ViewHolder holder = null;
+        ViewHolder holder;
         // first check to see if the view is null. if so, we have to inflate it.
         if (convertView == null) {
             holder = new ViewHolder();
             LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.single_list_element, null);
+            holder.setViews(convertView);
             convertView.setTag(holder);
         }else{
             holder = (ViewHolder) convertView.getTag();
         }
-
-        holder.setViews(convertView);
         holder.tQuestionTitle.setText(qInfo.getQuestion());
         holder.tScore.setText(qInfo.getScore());
         String[] tempQuestionTags = qInfo.getTags();
