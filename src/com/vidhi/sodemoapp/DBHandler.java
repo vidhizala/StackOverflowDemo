@@ -18,25 +18,35 @@ import java.util.HashMap;
 public class DBHandler extends SQLiteOpenHelper {
 
     enum COLUMNS_MASTER{ COLUMN_MASTERID, COLUMN_USERQUERY };
-    enum COLUMNS_QUESTIONS{ COLUMN_QID, COLUMN_QUESTIONTITLE, COLUMN_QUESTIONSCORE, COLUMN_QUESTIONPAGE, COLUMN_MASTER_REF };
+    enum COLUMNS_QUESTIONS{ COLUMN_QID, COLUMN_QUESTIONTITLE, COLUMN_QUESTIONSCORE, COLUMN_QUESTIONPAGE, COLUMN_QUESTION_BODY_MARKDOWN, COLUMN_MASTER_REF, COLUMN_QUE_OWNER_REF };
     enum COLUMNS_TAGS{ COLUMN_TAG_ID, COLUMN_TAG_TITLE, COLUMN_TAG_QUE_REF };
 
-    private static final String COLUMN_MASTERID = "masterid";
-    private static final String COLUMN_MASTER_REF = "masterref";
-    private static final String COLUMN_QID = "questionid";
-    private static final String COLUMN_QUESTIONSCORE = "questionscore";
+    private static final String COLUMN_MASTERID = "masterId";
+    private static final String COLUMN_MASTER_REF = "masterRef";
+    private static final String COLUMN_QID = "questionId";
+    private static final String COLUMN_QUESTIONSCORE = "questionScore";
     private static final String COLUMN_QUESTIONPAGE = "questionPage";
     private static final String COLUMN_QUESTIONTITLE = "questionTitle";
     private static final String COLUMN_QUESTIONBODYMARKDOWN = "questionBodyMarkdown";
-    private static final String COLUMN_TAG_ID = "tagid";
-    private static final String COLUMN_TAG_QUE_REF = "tagqueref";
-    private static final String COLUMN_TAG_TITLE = "tagtitle";
-    private static final String COLUMN_USERQUERY = "userquery";
+    private static final String COLUMN_QUESTIONOWNERREF = "questionOwnerRef";
+
+
+    private static final String COLUMN_TAG_ID = "tagId";
+    private static final String COLUMN_TAG_QUE_REF = "tagQueRef";
+    private static final String COLUMN_TAG_TITLE = "tagTitle";
+    private static final String COLUMN_USERQUERY = "userQuery";
+
+    private static final String COLUMN_OWNERID = "ownerId";
+    private static final String COLUMN_OWNERDISPLAYNAME = "ownerDisplayName";
+    private static final String COLUMN_OWNERREPUTATION = "ownerReputation";
+
     private static final String DATABASE_NAME = "SOData.db";
     private static final int DATABASE_VERSION = 1;
-    private static final String TABLE_QUESTIONS = "questions";
-    private static final String TABLE_SEARCH_MASTER = "master";
-    private static final String TABLE_TAGS = "tags";
+
+    private static final String TABLE_QUESTIONS = "Questions";
+    private static final String TABLE_SEARCH_MASTER = "Master";
+    private static final String TABLE_TAGS = "Tags";
+    private static final String TABLE_OWNERS = "Owners";
 
 
     public DBHandler(Context context, String databaseName,
@@ -60,41 +70,60 @@ public class DBHandler extends SQLiteOpenHelper {
                                " INTEGER primary key autoincrement, " + COLUMN_USERQUERY + " TEXT )");
 
         sqLiteDatabase.execSQL("CREATE TABLE " + TABLE_QUESTIONS + " ( " + COLUMN_QID +
-                               "  INTEGER primary key autoincrement, " + COLUMN_QUESTIONTITLE + " TEXT, " +
+                               "  INTEGER primary key, " + COLUMN_QUESTIONTITLE + " TEXT, " +
                                COLUMN_QUESTIONSCORE + " INTEGER, " +
                                COLUMN_QUESTIONPAGE + " INTEGER, " +
                                COLUMN_QUESTIONBODYMARKDOWN + " TEXT, " +
-                               COLUMN_MASTER_REF + " integer,FOREIGN KEY(" +
-                               COLUMN_MASTER_REF + ") REFERENCES " + TABLE_SEARCH_MASTER + "( " + COLUMN_MASTERID +
+                               COLUMN_MASTER_REF + " integer, "+
+                               COLUMN_QUESTIONOWNERREF + " integer, " +
+                               "FOREIGN KEY(" + COLUMN_QUESTIONOWNERREF + ") REFERENCES " + TABLE_OWNERS + "( " + COLUMN_OWNERID +
+                               " ) ON DELETE SET NULL," +
+                               "FOREIGN KEY(" + COLUMN_MASTER_REF + ") REFERENCES " + TABLE_SEARCH_MASTER + "( " + COLUMN_MASTERID +
                                " ) ON DELETE CASCADE);");
 
         sqLiteDatabase.execSQL("CREATE TABLE " + TABLE_TAGS + " (" + COLUMN_TAG_ID +
                                " integer primary key autoincrement, " +  COLUMN_TAG_TITLE + " text, " +
                                COLUMN_TAG_QUE_REF + " integer, FOREIGN KEY(" + COLUMN_TAG_QUE_REF +
                                ") REFERENCES " + TABLE_QUESTIONS +"( " + COLUMN_QID + ") ON DELETE CASCADE);");
+
+        sqLiteDatabase.execSQL("CREATE TABLE " + TABLE_OWNERS + " (" + COLUMN_OWNERID +
+                " integer primary key, " +  COLUMN_OWNERDISPLAYNAME + " text, " +
+                COLUMN_OWNERREPUTATION + " integer);");
     }
 
     /**
      * Function to add Question in Questions table of db
      *
-     * @param questionInfo - Object of question that is to be inserted in db
-     * @param query         - userquery that has been inserted in Master table of database. Used to reference it in offline support
+     * @param questionInfos - Array of Objects of question that is to be inserted in db
+     *                     query - user query
      */
-    public void addQuestion(QuestionInfo questionInfo, String query) {
+    public void addQuestions(ArrayList<QuestionInfo> questionInfos, String query) {
 
-        ContentValues questionTableValues = new ContentValues();
-        questionTableValues.put(COLUMN_QUESTIONTITLE, questionInfo.getQuestion());
-        questionTableValues.put(COLUMN_QUESTIONSCORE, questionInfo.getScore());
-        questionTableValues.put(COLUMN_QUESTIONPAGE, questionInfo.getPage());
-        long masterTableID = fetchMasterIdFromQuery(query);
-        questionTableValues.put(COLUMN_MASTER_REF, Long.valueOf(masterTableID));
         SQLiteDatabase sqLiteDatabase = getWritableDatabase();
-        long returnReferenceID = sqLiteDatabase.insert(TABLE_QUESTIONS, null, questionTableValues);
+        long masterTableID = fetchMasterIdFromQuery(query);
+
+
+        for(int i=0; i< questionInfos.size(); i++){
+
+            QuestionInfo questionInfo = questionInfos.get(i);
+            Log.d(MainActivity.TAG, "adding question... Thread ID =" + Thread.currentThread().getId() );
+            ContentValues questionTableValues = new ContentValues();
+            questionTableValues.put(COLUMN_QID, questionInfo.getQuestionID());
+            questionTableValues.put(COLUMN_QUESTIONTITLE, questionInfo.getQuestion());
+            questionTableValues.put(COLUMN_QUESTIONSCORE, questionInfo.getScore());
+            questionTableValues.put(COLUMN_QUESTIONPAGE, questionInfo.getPage());
+            questionTableValues.put(COLUMN_QUESTIONBODYMARKDOWN, questionInfo.getBodyMarkdown());
+            questionTableValues.put(COLUMN_MASTER_REF, Long.valueOf(masterTableID));
+            questionTableValues.put(COLUMN_QUESTIONOWNERREF, questionInfo.getOwnerID());
+            long returnReferenceID = sqLiteDatabase.insert(TABLE_QUESTIONS, null, questionTableValues);
+            addTags(questionInfo, returnReferenceID, sqLiteDatabase);
+
+        }
+
         sqLiteDatabase.close();
-        addTags(questionInfo, returnReferenceID);
     }
 
-   public long fetchMasterIdFromQuery(String query){
+    public long fetchMasterIdFromQuery(String query){
 
         SQLiteDatabase sqLiteDatabase = getWritableDatabase();
         Cursor getMasterIDCursor;
@@ -103,34 +132,77 @@ public class DBHandler extends SQLiteOpenHelper {
         getMasterIDCursor.moveToFirst();
         return (long) getMasterIDCursor.getInt(0);
     }
-
     /**
      * Function to add tags of a particular question in Tags table of db
      *
      * @param questionInfo - Object containing the information of question currently whose tags are to be stored
-     * @param questionTableID         - Reference ID of the Question stored in Question Table of db. Used to store tags of this question
+     * @param questionTableID         - Reference ID of the Question stored in Question Table of db. Used to store
+     *                                  tags of this question
      */
-      public void addTags(QuestionInfo questionInfo, long questionTableID) {
+    public void addTags(QuestionInfo questionInfo, long questionTableID, SQLiteDatabase sqLiteDatabase) {
         String[] arrayOfString = questionInfo.getTags();
+
         for (int i = 0; i < arrayOfString.length; i++)
             if (arrayOfString[i] != null) {
                 ContentValues tagsTableValues = new ContentValues();
-                SQLiteDatabase sqLiteDatabase = getWritableDatabase();
                 tagsTableValues.put(COLUMN_TAG_TITLE, arrayOfString[i]);
                 tagsTableValues.put(COLUMN_TAG_QUE_REF, Long.valueOf(questionTableID));
                 sqLiteDatabase.insert(TABLE_TAGS, null, tagsTableValues);
-                sqLiteDatabase.close();
             }
+
+    }
+
+    public void addOwners(ArrayList<OwnerInfo> ownerInfos){
+
+        SQLiteDatabase sqLiteDatabase = getWritableDatabase();
+
+        for(int i=0 ;i< ownerInfos.size(); i++){
+
+            OwnerInfo ownerInfo = ownerInfos.get(i);
+
+            boolean exists;
+            ContentValues ownerTableValues = new ContentValues();
+            ownerTableValues.put(COLUMN_OWNERREPUTATION, ownerInfo.getOwnerReputation());
+            ownerTableValues.put(COLUMN_OWNERDISPLAYNAME, ownerInfo.getOwnerDisplayName());
+
+            exists = checkIfOwnerExists(ownerInfo, sqLiteDatabase);
+
+
+            if(!exists){
+                ownerTableValues.put(COLUMN_OWNERID, ownerInfo.getOwnerID());
+                sqLiteDatabase.insert(TABLE_OWNERS, null, ownerTableValues);
+
+            }else{
+                sqLiteDatabase.update(TABLE_OWNERS, ownerTableValues, COLUMN_OWNERID + "=" + ownerInfo.getOwnerID(), null);
+            }
+
+        }
+        sqLiteDatabase.close();
+    }
+
+    private boolean checkIfOwnerExists(OwnerInfo ownerinfo, SQLiteDatabase sqLiteDatabase) {
+
+        Cursor searchOwnerInfo = sqLiteDatabase.query(TABLE_OWNERS,new String[] { COLUMN_OWNERID },
+                COLUMN_OWNERID + "=" + ownerinfo.getOwnerID(), null, null,null,null);
+        if (searchOwnerInfo.getCount() != 0) {
+            searchOwnerInfo.close();
+            return true;
+        }
+        searchOwnerInfo.close();
+        return false;
     }
 
     /**
      * Function to add the searchQuery entered by user to Master table in cache database
-     * This table stores the string entered by user and serves as a dictionary for finding relevant data for offline support
+     * This table stores the string entered by user and serves as a dictionary for finding relevant data
+     * for offline support
      *
      * @param userQuery
+     * @return ID of the record entered in Master table. This ID will be useful as reference to add records in Questions
+     * and Tags table
      */
     public void addToMaster(String userQuery) {
-        Log.d(MainActivity.TAG, "inside add to master");
+
         if (!checkAndDeleteDuplicateEntry(userQuery)) {
             // in case there is a duplicate that needs to be removed and there are 10 records, remove the duplicate one
             //thus making space for the new entry. SO, no need to check and delete older data
@@ -152,7 +224,6 @@ public class DBHandler extends SQLiteOpenHelper {
      */
     public boolean checkAndDeleteDuplicateEntry(String userQuery) {
 
-        Log.d(MainActivity.TAG, "inside check and delete duplicate entry");
         SQLiteDatabase sqLiteDatabase = getWritableDatabase();
         Cursor searchMasterCursor = sqLiteDatabase.query(TABLE_SEARCH_MASTER,new String[] { COLUMN_MASTERID },
                                     COLUMN_USERQUERY + "=\"" + userQuery + "\"", null, null,null,null);
@@ -172,7 +243,6 @@ public class DBHandler extends SQLiteOpenHelper {
      */
     public void checkAndDeleteOlderData() {
 
-        Log.d(MainActivity.TAG, "inside check and delete older data");
         SQLiteDatabase sqLiteDatabase = getWritableDatabase();
         long minID;
         Cursor selectTableSearchCursor;
@@ -200,34 +270,37 @@ public class DBHandler extends SQLiteOpenHelper {
      * @param userQuery - String entered by user to send request
      * @return - list of QuestionInfo objects containing Questions and related data matching userQuery
      */
-  public HashMap fetchFromDatabase(String userQuery, int startFrom, int pageSize) {
+    public HashMap fetchQuestionsFromDatabase(String userQuery, int startFrom, int pageSize) {
 
         HashMap dataToreturn = new HashMap();
-        boolean has_more = false;
+        boolean has_more;
         ArrayList questionInfos = new ArrayList<QuestionInfo>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor searchQuestionsTable = db.query(TABLE_SEARCH_MASTER, null, COLUMN_USERQUERY + " LIKE \"%" + userQuery +
+        Cursor searchTable = db.query(TABLE_SEARCH_MASTER, null, COLUMN_USERQUERY + " LIKE \"%" + userQuery +
                                       "%\"", null, null, null, null);
 
         QuestionInfo questionInfo;
         String[] tempTagHolder;
         Cursor tagsTableCursor;
 
-        if (searchQuestionsTable.moveToFirst()) {
-            int i = new Integer(searchQuestionsTable.getInt(COLUMNS_QUESTIONS.COLUMN_QID.ordinal()));
-            searchQuestionsTable = db.query(TABLE_QUESTIONS, null, COLUMN_MASTER_REF + "=" + i, null, null, null,
+        if (searchTable.moveToFirst()) {
+            int i = new Integer(searchTable.getInt(COLUMNS_MASTER.COLUMN_MASTERID.ordinal()));
+            searchTable = db.query(TABLE_QUESTIONS, null, COLUMN_MASTER_REF + "=" + i, null, null, null,
                                    null, "" + startFrom + "," + pageSize);
-            if (searchQuestionsTable.moveToFirst()) {
+            if (searchTable.moveToFirst()) {
                 do {
                     questionInfo = new QuestionInfo();
-                    questionInfo.setQuestion(searchQuestionsTable
+                    questionInfo.setQuestion(searchTable
                                 .getString(COLUMNS_QUESTIONS.COLUMN_QUESTIONTITLE.ordinal()));
-                    questionInfo.setScore(searchQuestionsTable
-                                .getString(COLUMNS_QUESTIONS.COLUMN_QUESTIONSCORE.ordinal()));
-                    questionInfo.setPage(searchQuestionsTable.getString(COLUMNS_QUESTIONS.COLUMN_QUESTIONPAGE.ordinal()));
+                    questionInfo.setScore(searchTable
+                            .getString(COLUMNS_QUESTIONS.COLUMN_QUESTIONSCORE.ordinal()));
+                    questionInfo.setBodyMarkdown(searchTable.getString(COLUMNS_QUESTIONS.COLUMN_QUESTION_BODY_MARKDOWN.ordinal()));
+                    questionInfo.setOwnerID(searchTable.getString(COLUMNS_QUESTIONS.COLUMN_QUE_OWNER_REF.ordinal()));
+                    questionInfo.setPage(searchTable.getString(COLUMNS_QUESTIONS.COLUMN_QUESTIONPAGE.ordinal()));
+                    questionInfo.setQuestionID(searchTable.getString(COLUMNS_QUESTIONS.COLUMN_QID.ordinal()));
                     tempTagHolder = new String[5];
                     tagsTableCursor = db.query(TABLE_TAGS, new String[] { COLUMN_TAG_TITLE }, COLUMN_TAG_QUE_REF +
-                                      " = " + searchQuestionsTable.getString(COLUMNS_QUESTIONS.COLUMN_QID.ordinal()),
+                                      " = " + searchTable.getString(COLUMNS_QUESTIONS.COLUMN_QID.ordinal()),
                                       null, null, null, null);
                     if (tagsTableCursor.moveToFirst()) {
                         int count = 0;
@@ -241,8 +314,8 @@ public class DBHandler extends SQLiteOpenHelper {
                     questionInfo.setTags(tempTagHolder);
                     questionInfos.add(questionInfo);
 
-                } while (searchQuestionsTable.moveToNext());
-                searchQuestionsTable.close();
+                } while (searchTable.moveToNext());
+                searchTable.close();
 
             }
         }
@@ -259,17 +332,15 @@ public class DBHandler extends SQLiteOpenHelper {
         return dataToreturn;
     }
 
-  public int getTotalRows(String tableName){
+    public int getTotalRows(String tableName){
         int totalRows;
         SQLiteDatabase sqLiteDatabase = getWritableDatabase();
         totalRows = (int) DatabaseUtils.queryNumEntries(sqLiteDatabase, tableName);
-        Log.d(MainActivity.TAG,"total rows in "+tableName+ " is "+totalRows);
         sqLiteDatabase.close();
         return totalRows;
     }
 
     public void removeStalePageifExists(int page, String query){
-        Log.d(MainActivity.TAG, "inside remove stale page" + page);
         SQLiteDatabase sqLiteDatabase = getWritableDatabase();
         long masterID = fetchMasterIdFromQuery(query);
         sqLiteDatabase.delete(TABLE_QUESTIONS, COLUMN_MASTER_REF + "=" + masterID + " AND " + COLUMN_QUESTIONPAGE + "=" + page, null);
@@ -277,7 +348,9 @@ public class DBHandler extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase paramSQLiteDatabase, int paramInt1, int paramInt2) {
-        onCreate(paramSQLiteDatabase);
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i2) {
+
     }
+
+
 }

@@ -1,57 +1,48 @@
 package com.vidhi.sodemoapp;
 
+import java.io.Serializable;
+
 /**
  * Bean for storing information related to a particular question
  */
-public class QuestionInfo {
-   String questionText;
+public class QuestionInfo implements Serializable{
+    String questionText;
     String score;
     String bodyMarkdown;
     String page;
     int upvoteCount;
     int downVoteCount;
-    int questionID;
+    String questionID;
+    String ownerID;
     String[] tags;
 
-    public String getQuestion() {
-        return this.questionText;
-    }
+    public String getQuestion() { return this.questionText; }
 
-    public String getScore() {
-        return this.score;
-    }
+    public String getScore() { return this.score; }
 
     public String[] getTags() {
         return this.tags;
     }
 
-    public void setQuestion(String question) {
-        this.questionText = question;
+    public void setQuestion(String paramString) {
+        this.questionText = paramString;
     }
 
-    public void setScore(String score) {
-        this.score = score;
+    public void setScore(String paramString) {
+        this.score = paramString;
     }
 
-    public void setTags(String[] tagsArray) {
-        this.tags = tagsArray;
+    public void setTags(String[] paramArrayOfString) {
+        this.tags = paramArrayOfString;
     }
 
-    public String getPage(){
-        return page;
-    }
+    public String getPage(){ return page; }
 
-    public void setPage(String page){
-        this.page = page;
-    }
+    public void setPage(String page) { this.page = page; }
 
-    public String getBodyMarkdown(){
-        return bodyMarkdown;
-    }
+    public String getBodyMarkdown(){ return bodyMarkdown; }
 
-    public void setBodyMarkdown(String bodyMarkdown) {
-        this.bodyMarkdown = bodyMarkdown;
-    }
+    public void setBodyMarkdown(String bodyMarkdown) { this.bodyMarkdown = bodyMarkdown; }
 
     public int getUpvoteCount() {
         return upvoteCount;
@@ -69,15 +60,24 @@ public class QuestionInfo {
         this.downVoteCount = downVoteCount;
     }
 
+    public String getOwnerID() {
+        return ownerID;
+    }
+
+    public void setOwnerID(String ownerID) {
+        this.ownerID = ownerID;
+    }
+
+
     public int compareTo(QuestionInfo questionInfo) {
         return page.compareTo(questionInfo.page);
     }
 
-    public int getQuestionID() {
+    public String getQuestionID() {
         return questionID;
     }
 
-    public void setQuestionID(int questionID) {
+    public void setQuestionID(String questionID) {
         this.questionID = questionID;
     }
 

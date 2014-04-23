@@ -3,11 +3,14 @@ package com.vidhi.sodemoapp; /**
  */
 
 import android.app.Activity;
-import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
@@ -22,28 +25,32 @@ import static android.widget.AbsListView.OnScrollListener;
 public class MainActivity extends Activity {
 
     public final static String TAG = "SODemoDebug";
-    public final static String LIST_INSTANCE_STATE = "listInstanceState";
     CustomListViewAdapter adapter;
     ListView listView;
     DataController dataController;
     String query;
-    ProgressDialog progressDialog;
     ArrayList<QuestionInfo> questionInfos;
     SearchView searchView;
-    TextView textViewResult;
+    TextView footerTextView;
+    View footerView;
     int prevPage;
+    boolean staleFlag;
 
     String failureMessageAbsurdQuery = "No results found matching your query. Please check spelling and try again.";
     String failureMessageNoNetwork = "No Response from Server. Please check your connectivity and try again.";
     String failureDefaultMessage = "Cannot retrieve data. Please try again later.";
     String successNoNetwork = "Showing cached data. No connectivity.";
-    String progressDialogMessage = "Retrieving data... Please wait";
     String failureDataNotFound = "No data found matching the search query. Please try again.";
+    String initMessage = "Type a query to start search";
+    String loadingMessage = "Loading more...";
+    String loadingFirstMessage = "Loading results...";
+    String loadingDone = "No more results";
 
-    int prevTotalCount;
     int pageSize = 15;
     int page = 1;
     boolean hasMore = false;
+    boolean loadingMore;
+    int prevTotalCount;
 
     /**
      * Function (override) to create and initialize objects to be used along the whole app - adapters, views, client and data layer objects, etc.
@@ -52,9 +59,15 @@ public class MainActivity extends Activity {
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.list_layout);
         this.listView = ((ListView) findViewById(R.id.list));
+        this.footerView = ((LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.footerview_layout, null, false);
+        this.listView.addFooterView(footerView);
+        this.footerTextView = (TextView) findViewById(R.id.footerTextView);
+        this.footerView.setEnabled(false);
+        this.footerTextView.setText(initMessage);
         this.questionInfos = new ArrayList();
         this.dataController = new DataController(this);
         this.adapter = new CustomListViewAdapter(this, R.layout.single_list_element, this.questionInfos);
@@ -62,46 +75,36 @@ public class MainActivity extends Activity {
         this.listView.setOnScrollListener(customScrollListener);
         this.listView.setOnItemClickListener(customOnItemClickListener);
         this.searchView = new SearchView(this);
-        this.textViewResult = (TextView) findViewById(R.id.textViewResult);
-        this.textViewResult.setVisibility(View.INVISIBLE);
 
-        if(savedInstanceState != null) {
-
-            Log.d(MainActivity.TAG,"savedInstanceState not null");
-            questionInfos = (ArrayList) savedInstanceState.get(LIST_INSTANCE_STATE);
-            adapter.notifyDataSetChanged();
-        }
     }
 
-  public AbsListView.OnScrollListener customScrollListener = new OnScrollListener(){
+    public AbsListView.OnScrollListener customScrollListener = new OnScrollListener(){
         @Override
         public void onScrollStateChanged(AbsListView absListView, int i) {
         }
 
         public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 
-            page = ((firstVisibleItem + visibleItemCount) /pageSize) +1;
-            Log.d(MainActivity.TAG, "page in scrollhandler =" + page + "firstvisibleItem +visibleitemcount ="+(firstVisibleItem+visibleItemCount) + "totalItemCount"+totalItemCount + "prevpage ="+prevPage);
-
-            if(hasMore){ // when user reached bottom of list
+            page = ((firstVisibleItem + visibleItemCount-1) /pageSize) +1;
+            Log.d(MainActivity.TAG, "page ="+page+ "\n hasMore ="+hasMore+ "\n staleFlag="+staleFlag+ "\n loadingMore="+loadingMore);
+            if(hasMore) {
+                // when user reached bottom of list
                 final int lastItem = firstVisibleItem + visibleItemCount;
                 if(lastItem == totalItemCount) {
-                    if (totalItemCount == 0 || adapter == null)
+                    if (totalItemCount == 0 || adapter == null) {
                         return;
-                    if (prevTotalCount == totalItemCount)
-                        return;
-                    boolean loadMore = firstVisibleItem + visibleItemCount >= totalItemCount;
-                    if (loadMore){
+                    }
 
-                        Log.d(TAG, "reached the end of list...");
+                    boolean loadMore = firstVisibleItem + visibleItemCount + 1 >= totalItemCount;
+                    Log.d(MainActivity.TAG, "loadMre =" +loadMore+"\n LoadingMore ="+loadingMore);
+                    if (loadMore && (!loadingMore) && (prevTotalCount != totalItemCount)) {
                         getDataForList(successHandler,failureHandler, false);
                         prevTotalCount = totalItemCount;
                     }
                 }
             }
-            if(prevPage > page){
+            if(prevPage > page && staleFlag){
                 //refetch this page and notify adapter dataset change
-                Log.d(MainActivity.TAG,"prevpage is > page. PrevPage=" + prevPage);
                 getDataForList(successHandler, failureHandler, true);
             }
 
@@ -109,31 +112,37 @@ public class MainActivity extends Activity {
 
     };
 
-
     /**
      * Function to actually initiate the http request by invoking client layer
      * the questionInfos returned by client layer will be checked for null data alongwith network availability
      * to show appropriate feedback to user
      */
-    private void getDataForList(Handler successHandler, Handler failureHandler, boolean fromNavigatePreloadedList) {
+    private void getDataForList(final Handler successHandler, final Handler failureHandler, final boolean fromNavigatePreloadedList) {
         prevPage = page; // save the current page to detect scroll up in onScrollListener
-        try {
-            this.textViewResult.setVisibility(View.VISIBLE);
-            this.textViewResult.setText("Searching...");
-            progressDialog = ProgressDialog.show(this, "", progressDialogMessage);
-            HashMap requestData = new HashMap();
-            requestData.put("query", query);
-            Log.d(MainActivity.TAG , "page sending ="+page);
-            requestData.put("page", page);
-            requestData.put("pageSize", pageSize);
-            if(fromNavigatePreloadedList){
-                requestData.put("refreshList", fromNavigatePreloadedList);
-            }
-            dataController.sendRequestforQuestions(requestData, successHandler, failureHandler);progressDialog.setCancelable(true);
+        loadingMore = true;
+        new Thread(new Runnable() {
+            public void run()
+            {
+                try {
 
-        } catch (Exception localException) {
-            Log.d(TAG, "Error occured : ", localException);
-        }
+                    Looper.prepare();
+
+                    HashMap requestData = new HashMap();
+                    requestData.put("query", query);
+                    requestData.put("page", page);
+                    requestData.put("pageSize", pageSize);
+                    if(fromNavigatePreloadedList){
+                        requestData.put("refreshList", fromNavigatePreloadedList);
+                    }
+                    dataController.sendRequestforQuestions(requestData, successHandler, failureHandler);
+
+                    Looper.loop();
+
+                } catch (Exception localException) {
+                    Log.d(TAG, "Error occured : ", localException);
+                }
+            }
+        }).start();
     }
 
 
@@ -155,45 +164,61 @@ public class MainActivity extends Activity {
 
 
     private Handler failureHandler = new Handler() {
-        public void handleMessage(Message msg) {
+        public void handleMessage(final Message msg) {
             super.handleMessage(msg);
 
-            HashMap result = (HashMap) msg.obj;
-            Integer status = (Integer) result.get("responseCode");
+            runOnUiThread(new Runnable() {
+                public void run() {
 
-            page = Integer.parseInt(result.get("page").toString());
-            if((Boolean)result.get("has_more")){
-                hasMore = true;
-            }
-            Log.d(MainActivity.TAG, "has_more" + hasMore);
-            textViewResult.setVisibility(View.VISIBLE);
-            progressDialog.dismiss();
-            adapter.clear();
-            switch(status){
-                case 200 : textViewResult.setText("Result:\n" + failureMessageAbsurdQuery);
-                           showToast(failureMessageAbsurdQuery);
-                           adapter.clear();
-                           break;
-                case 0   : textViewResult.setText("Result:\n"+failureMessageNoNetwork);
-                           showToast(failureMessageNoNetwork);
-                           break;
-                case 404 : textViewResult.setText("Result:\n" + failureDataNotFound);
-                           showToast(failureDataNotFound);
-                           adapter.clear();
-                           break;
-                default  : textViewResult.setText("Result:\n" + failureDefaultMessage);
-                           showToast(failureDefaultMessage);
-                           adapter.clear();
-                           break;
-            }
+                    HashMap result = (HashMap) msg.obj;
+                    Integer status = (Integer) result.get("responseCode");
+
+                    page = Integer.parseInt(result.get("page").toString());
+
+                    if(result.containsKey("has_more")){
+                        hasMore = (Boolean)result.get("has_more");
+                    }
+                    if(result.containsKey("staleFlag")){
+                        staleFlag = (Boolean)result.get("staleFlag");
+                    }
+
+                    switch (status) {
+                        case 200:
+                            showToast(failureMessageAbsurdQuery);
+                            adapter.clear();
+                            break;
+                        case 0:
+                            showToast(failureMessageNoNetwork);
+                            break;
+                        case 404:
+                            showToast(failureDataNotFound);
+                            adapter.clear();
+                            break;
+                        default:
+                            showToast(failureDefaultMessage);
+                            adapter.clear();
+                            break;
+                    }
+                    loadingMore = false;
+
+                    if(listView.getCount() == 1){
+                        footerTextView.setText(initMessage);
+                    }else if(hasMore == false){
+                        footerTextView.setText(loadingDone);
+                    }else{
+                        footerTextView.setText(loadingMessage);
+                    }
+
+                }
+            });
         }
     };
 
     private void showToast(final String message){
         runOnUiThread(new Runnable() {
             public void run() {
-                Toast localToast = Toast.makeText(MainActivity.this, message, 0);
-                localToast.setGravity(18,0,0);
+                Toast localToast = Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT);
+                localToast.setGravity(18, 0, 0);
                 localToast.show();
             }
         });
@@ -202,26 +227,46 @@ public class MainActivity extends Activity {
     private Handler successHandler = new Handler() {
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            HashMap result = (HashMap) msg.obj;
+            final HashMap result = (HashMap) msg.obj;
+            staleFlag = (Boolean) result.get("staleFlag");
+            hasMore = (Boolean) result.get("has_more");
             questionInfos = (ArrayList) result.get("response");
             adapter.removeIfExists(page);
-            if ((questionInfos != null) && (questionInfos.size() > 0)) {
-                for (int i = 0; i < questionInfos.size(); i++){
-                   adapter.add(questionInfos.get(i));
-                }
-            }
-            hasMore = (Boolean) result.get("has_more");
-            progressDialog.dismiss();
-            textViewResult.setText("Result:\n");
-            adapter.notifyDataSetChanged();
-            int responseCode = Integer.parseInt(result.get("responseCode").toString());
 
+            addQuestionsToList(questionInfos);
+
+            int responseCode = Integer.parseInt(result.get("responseCode").toString());
             if(responseCode != 200){
-                textViewResult.setText("Result:\n"+successNoNetwork);
                 showToast(successNoNetwork);
             }
+            if(listView.getCount() == 1){
+                footerTextView.setText(initMessage);
+            }else if(hasMore == false){
+                footerTextView.setText(loadingDone);
+            }else{
+                footerTextView.setText(loadingMessage);
+            }
+
         }
     };
+
+    public void addQuestionsToList(final ArrayList<QuestionInfo> questionInfos){
+
+        runOnUiThread(new Runnable() {
+
+            public void run() {
+                Log.d(MainActivity.TAG, "Thread for updating adapter from successHandler =" + Thread.currentThread().getId());
+
+                if ((questionInfos != null) && (questionInfos.size() > 0)) {
+                    for (int i = 0; i < questionInfos.size(); i++) {
+                        adapter.add(questionInfos.get(i));
+                    }
+                }
+                adapter.notifyDataSetChanged();
+                loadingMore = false;
+            }
+        });
+    }
 
 
     /**
@@ -234,66 +279,40 @@ public class MainActivity extends Activity {
             return true;
         }
 
-       @Override
+        @Override
         public boolean onQueryTextSubmit(String userQuery) {
             if(query != null){
                 if(!(query.equals(userQuery))){
                    page = 1;
+                   staleFlag = false;
                    adapter.clear();
                 }
             }
             query = userQuery.replace("\"","\\\"");
-            getDataForList(successHandler, failureHandler, false);
+            footerTextView.setText(loadingFirstMessage);
+            getDataForList(successHandler,failureHandler, false);
             searchView.clearFocus();
             return true;
         }
     };
 
-  @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        Log.d(MainActivity.TAG,"onSaveInstanceState");
 
-        super.onSaveInstanceState(savedInstanceState);
+    public void startDetailActivity (QuestionInfo questionInfo) {
+        if(questionInfo != null){
+            Intent questionDetail = new Intent(this, DetailActivity.class);
+            questionDetail.putExtra("questionTitle", questionInfo.getQuestion());
+            questionDetail.putExtra("questionScore", questionInfo.getScore() );
+            questionDetail.putExtra("questionID", questionInfo.getQuestionID() );
 
-        Bundle instanceMap = new Bundle();
-        instanceMap.putParcelableArrayList(LIST_INSTANCE_STATE, adapter.questionInfos);
-        savedInstanceState.putAll(instanceMap);
-
-
+            startActivity(questionDetail);
+        }
     }
 
-    @Override
-    public void onPause() {
-        Log.d(MainActivity.TAG, "onPause");
 
-        super.onPause();  // Always call the superclass method first
-
-    }
-
-    @Override
-    public void onResume() {
-        Log.d(MainActivity.TAG, "onResume");
-
-        super.onResume();
-    }
-
-    @Override
-    public void onRestoreInstanceState(Bundle savedInstanceState){
-        Log.d(MainActivity.TAG, "onRestorInstanceState");
-        super.onRestoreInstanceState(savedInstanceState);
-        questionInfos = (ArrayList) savedInstanceState.get(LIST_INSTANCE_STATE);
-
-        adapter.notifyDataSetChanged();
-    }
-    /**
-     * @param adapterView
-     * @param view
-     * @param viewPosition
-     * @param itemID
-     */
     public OnItemClickListener customOnItemClickListener = new OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int viewPosition, long itemID) {
+            startDetailActivity((QuestionInfo) adapterView.getItemAtPosition(viewPosition));
 
         }
     };
