@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="horizontal"
+              android:padding="10dp" >
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="Score"
+            android:id="@+id/answerScore"
+            android:textAlignment="viewStart"
+            android:layout_marginLeft="15dp"
+            android:layout_weight="1" android:layout_marginRight="5dp"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="?android:attr/listPreferredItemHeightSmall"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="Answer Text"
+            android:id="@+id/answerHeaderView"
+            android:textAlignment="viewStart"
+            android:paddingRight="10dp"
+            android:layout_toRightOf="@id/answerScore"
+            android:gravity="center_horizontal"
+            android:layout_marginLeft="10dp"
+            android:ellipsize="marquee"
+            android:layout_weight="15"/>
+
+    <LinearLayout android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_weight="1"
+                  android:orientation="horizontal"
+                  android:layout_gravity="right">
+        <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                android:src="@drawable/voteup_icon"/>
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:text="2" android:id="@+id/upvoteCount"
+                android:textAlignment="viewStart"
+                android:layout_toRightOf="@id/answerScore"/>
+        <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                android:layout_marginLeft="5dp"
+                android:src="@drawable/votedown_icon"/>
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:text="2" android:id="@+id/downvoteCount"
+                android:textAlignment="viewStart"
+                android:layout_toRightOf="@id/answerScore" android:layout_marginRight="5dp"/>
+    </LinearLayout>
+
+
+</LinearLayout>

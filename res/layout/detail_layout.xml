@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:layout_weight="1"
+              android:orientation="vertical">
+
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="264dp">
+
+            <us.feras.mdv.MarkdownView
+                    android:id="@+id/questionDetailView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    style="@android:style/TextAppearance.DeviceDefault.Small"
+                    android:layout_weight="1"/>
+        </LinearLayout>
+        <TextView android:layout_width="fill_parent"
+                  android:id="@+id/answersMessage"
+                  android:layout_height="wrap_content"
+                  android:text="Answers:"
+                  android:layout_marginBottom="5dp"
+                  android:layout_marginTop="5dp"
+                  style="@android:style/TextAppearance.Small"
+                />
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent">
+            <TextView
+                    android:id="@+id/loadingTextView"
+                    android:gravity="center"
+                    android:padding="20dp"
+                    android:text="Loading answers..."
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+            </TextView>
+            <ExpandableListView
+                    android:id="@+id/answer_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="fill_parent" >
+            </ExpandableListView>
+        </LinearLayout>
+
+</LinearLayout>

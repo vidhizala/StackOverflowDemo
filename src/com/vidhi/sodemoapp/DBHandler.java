@@ -20,6 +20,7 @@ public class DBHandler extends SQLiteOpenHelper {
     enum COLUMNS_MASTER{ COLUMN_MASTERID, COLUMN_USERQUERY };
     enum COLUMNS_QUESTIONS{ COLUMN_QID, COLUMN_QUESTIONTITLE, COLUMN_QUESTIONSCORE, COLUMN_QUESTIONPAGE, COLUMN_QUESTION_BODY_MARKDOWN, COLUMN_MASTER_REF, COLUMN_QUE_OWNER_REF };
     enum COLUMNS_TAGS{ COLUMN_TAG_ID, COLUMN_TAG_TITLE, COLUMN_TAG_QUE_REF };
+    enum COLUMNS_ANSWER{ COLUMN_ANSWER_ID, COLUMN_BODY_MARKDOWN, COLUMN_DOWNVOTE_COUNT, COLUMN_UPVOTE_COUNT, COLUMN_SCORE, COLUMN_OWNERID, COLUMN_QUESTION_REF_ID };
 
     private static final String COLUMN_MASTERID = "masterId";
     private static final String COLUMN_MASTER_REF = "masterRef";
@@ -36,6 +37,14 @@ public class DBHandler extends SQLiteOpenHelper {
     private static final String COLUMN_TAG_TITLE = "tagTitle";
     private static final String COLUMN_USERQUERY = "userQuery";
 
+    private static final String COLUMN_ANSWERID = "answerID";
+    private static final String COLUMN_ANSWERMARKDOWN = "answerMarkdown";
+    private static final String COLUMN_ANSWERSCORE = "answerScore";
+    private static final String COLUMN_ANSWERUPVOTECOUNT = "answerUpvoteCount";
+    private static final String COLUMN_ANSWERDOWNVOTECOUNT = "answerDownvoteCount";
+    private static final String COLUMN_ANSWEROWNERREF = "answerOwnerRef";
+    private static final String COLUMN_ANSWERQUEREF ="answerQueRef";
+
     private static final String COLUMN_OWNERID = "ownerId";
     private static final String COLUMN_OWNERDISPLAYNAME = "ownerDisplayName";
     private static final String COLUMN_OWNERREPUTATION = "ownerReputation";
@@ -46,12 +55,13 @@ public class DBHandler extends SQLiteOpenHelper {
     private static final String TABLE_QUESTIONS = "Questions";
     private static final String TABLE_SEARCH_MASTER = "Master";
     private static final String TABLE_TAGS = "Tags";
+    private static final String TABLE_ANSWERS = "Answers";
     private static final String TABLE_OWNERS = "Owners";
 
 
     public DBHandler(Context context, String databaseName,
                      SQLiteDatabase.CursorFactory cursorFactory, int databaseVersion) {
-        super(context, DATABASE_NAME, cursorFactory, DATABASE_VERSION);
+        super(context, "/mnt/sdcard/"+DATABASE_NAME, cursorFactory, DATABASE_VERSION);
     }
 
     /**
@@ -89,6 +99,17 @@ public class DBHandler extends SQLiteOpenHelper {
         sqLiteDatabase.execSQL("CREATE TABLE " + TABLE_OWNERS + " (" + COLUMN_OWNERID +
                 " integer primary key, " +  COLUMN_OWNERDISPLAYNAME + " text, " +
                 COLUMN_OWNERREPUTATION + " integer);");
+
+        sqLiteDatabase.execSQL("CREATE TABLE " + TABLE_ANSWERS + " (" + COLUMN_ANSWERID +
+                " integer primary key, " +  COLUMN_ANSWERMARKDOWN + " text, " +
+                COLUMN_ANSWERDOWNVOTECOUNT + " integer, " + COLUMN_ANSWERUPVOTECOUNT + " integer, "+
+                COLUMN_ANSWERSCORE + " integer, " +
+                COLUMN_ANSWEROWNERREF + " integer, "+
+                COLUMN_ANSWERQUEREF + " integer, " +
+                "FOREIGN KEY(" + COLUMN_ANSWEROWNERREF +
+                ") REFERENCES " + TABLE_OWNERS +"( " + COLUMN_OWNERID + ") ON DELETE SET NULL, " +
+                "FOREIGN KEY(" + COLUMN_ANSWERQUEREF +
+                ") REFERENCES "+ TABLE_QUESTIONS +"( "+ COLUMN_QID +") ON DELETE CASCADE);");
     }
 
     /**
@@ -121,6 +142,52 @@ public class DBHandler extends SQLiteOpenHelper {
         }
 
         sqLiteDatabase.close();
+    }
+
+    public void addQuestionDetails(ArrayList<QuestionInfo> questionInfos, String questionID) {
+
+        QuestionInfo questioninfo = questionInfos.get(0);
+        SQLiteDatabase sqLiteDatabase = getWritableDatabase();
+        ContentValues questionTableValues = new ContentValues();
+        questionTableValues.put(COLUMN_QID, questionID);
+        questionTableValues.put(COLUMN_QUESTIONBODYMARKDOWN, questioninfo.getBodyMarkdown());
+        sqLiteDatabase.update(TABLE_QUESTIONS, questionTableValues, COLUMN_QID + "=" + questionID, null);
+        sqLiteDatabase.close();
+
+    }
+
+    public HashMap fetchQuestionDetails(String questionId){
+        HashMap questionDetails = new HashMap();
+        QuestionInfo questionInfo = null;
+        OwnerInfo ownerInfo = null;
+        SQLiteDatabase sqLiteDatabase = getWritableDatabase();
+        int ownerId = -1;
+
+        Cursor searchQuestionTable = sqLiteDatabase.query(TABLE_QUESTIONS,new String[] { COLUMN_QUESTIONBODYMARKDOWN, COLUMN_QUESTIONOWNERREF },
+                COLUMN_QID + " = " + questionId, null, null, null, null);
+        Log.d(MainActivity.TAG, "size of cursor ="+searchQuestionTable.getCount());
+        if (searchQuestionTable.moveToFirst()) {
+            questionInfo = new QuestionInfo();
+            questionInfo.setBodyMarkdown(searchQuestionTable.getString(0));
+            ownerId = searchQuestionTable.getInt(1);
+        }
+        searchQuestionTable.close();
+
+        if(ownerId != -1){
+            Cursor searchOwnerTableCursor = sqLiteDatabase.query(TABLE_OWNERS, null, COLUMN_OWNERID + " = " + ownerId, null, null, null, null );
+            if(searchOwnerTableCursor.moveToFirst()){
+                ownerInfo = new OwnerInfo();
+                ownerInfo.setOwnerID(searchOwnerTableCursor.getString(0));
+                ownerInfo.setOwnerDisplayName(searchOwnerTableCursor.getString(1));
+                ownerInfo.setOwnerReputation(searchOwnerTableCursor.getInt(2));
+            }
+        }
+
+        questionDetails.put("questionsData", questionInfo);
+        questionDetails.put("ownerData", ownerInfo);
+
+        sqLiteDatabase.close();
+        return questionDetails;
     }
 
     public long fetchMasterIdFromQuery(String query){
@@ -192,6 +259,27 @@ public class DBHandler extends SQLiteOpenHelper {
         return false;
     }
 
+    public void addAnswers(ArrayList<AnswerInfo> answerInfos){
+
+        SQLiteDatabase sqLiteDatabase = getWritableDatabase();
+
+        for(int i=0 ;i<answerInfos.size(); i++){
+            AnswerInfo answerInfo = answerInfos.get(i);
+
+            ContentValues answerTableContentValues = new ContentValues();
+            answerTableContentValues.put(COLUMN_ANSWERSCORE, answerInfo.getScore());
+            answerTableContentValues.put(COLUMN_ANSWERMARKDOWN, answerInfo.getBodyMarkdown());
+            answerTableContentValues.put(COLUMN_ANSWERDOWNVOTECOUNT, answerInfo.getDownVoteCount());
+            answerTableContentValues.put(COLUMN_ANSWERUPVOTECOUNT, answerInfo.getUpvoteCount());
+            answerTableContentValues.put(COLUMN_ANSWEROWNERREF, answerInfo.getOwnerID());
+            answerTableContentValues.put(COLUMN_ANSWERQUEREF, answerInfo.getQuestionRefID());
+
+            sqLiteDatabase.insert(TABLE_ANSWERS, null, answerTableContentValues);
+        }
+
+        sqLiteDatabase.close();
+
+    }
     /**
      * Function to add the searchQuery entered by user to Master table in cache database
      * This table stores the string entered by user and serves as a dictionary for finding relevant data
@@ -331,6 +419,32 @@ public class DBHandler extends SQLiteOpenHelper {
         dataToreturn.put("has_more", has_more);
         return dataToreturn;
     }
+
+
+    public ArrayList fetchAnswersFromDatabase(String questionID) {
+        ArrayList<AnswerInfo> answerInfos = new ArrayList<AnswerInfo>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor searchAnswerTable = db.query(TABLE_ANSWERS, null,  COLUMN_ANSWERQUEREF + "=" + questionID, null, null, null, null);
+
+        if (searchAnswerTable.moveToFirst()) {
+            do{
+                AnswerInfo answerInfo = new AnswerInfo();
+                answerInfo.setScore(searchAnswerTable.getInt(COLUMNS_ANSWER.COLUMN_SCORE.ordinal()));
+                answerInfo.setDownVoteCount(searchAnswerTable.getInt(COLUMNS_ANSWER.COLUMN_DOWNVOTE_COUNT.ordinal()));
+                answerInfo.setUpvoteCount(searchAnswerTable.getInt(COLUMNS_ANSWER.COLUMN_UPVOTE_COUNT.ordinal()));
+                answerInfo.setQuestionRefID(searchAnswerTable.getString(COLUMNS_ANSWER.COLUMN_QUESTION_REF_ID.ordinal()));
+                answerInfo.setBodyMarkdown(searchAnswerTable.getString(COLUMNS_ANSWER.COLUMN_BODY_MARKDOWN.ordinal()));
+                answerInfo.setOwnerID(searchAnswerTable.getString(COLUMNS_ANSWER.COLUMN_OWNERID.ordinal()));
+
+                answerInfos.add(answerInfo);
+            }while(searchAnswerTable.moveToNext());
+        }
+        searchAnswerTable.close();
+        db.close();
+
+        return answerInfos;
+    }
+
 
     public int getTotalRows(String tableName){
         int totalRows;

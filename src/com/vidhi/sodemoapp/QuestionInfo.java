@@ -16,9 +16,15 @@ public class QuestionInfo implements Serializable{
     String ownerID;
     String[] tags;
 
-    public String getQuestion() { return this.questionText; }
+    public String getQuestion() {
 
-    public String getScore() { return this.score; }
+
+        return this.questionText;
+    }
+
+    public String getScore() {
+        return this.score;
+    }
 
     public String[] getTags() {
         return this.tags;
