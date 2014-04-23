@@ -18,16 +18,15 @@ public class CustomListViewAdapter extends ArrayAdapter<QuestionInfo> {
     Context context;
     ArrayList questionInfos;
 
-    public CustomListViewAdapter(Context context, int position, ArrayList<QuestionInfo> questionInfos) {
-        super(context, position, questionInfos);
+    public CustomListViewAdapter(Context paramContext, int paramInt, ArrayList<QuestionInfo> questionInfos) {
+        super(paramContext, paramInt, questionInfos);
 
         this.questionInfos = questionInfos;
 
-        this.context = context;
+        this.context = paramContext;
 
     }
-
- @Override
+    @Override
     public void notifyDataSetChanged() {
         Collections.sort(questionInfos, questionInfoComparator);
         super.notifyDataSetChanged();
@@ -66,6 +65,7 @@ public class CustomListViewAdapter extends ArrayAdapter<QuestionInfo> {
     public View getView(int position, View convertView, ViewGroup parent) {
         QuestionInfo qInfo = getItem(position);
         ViewHolder holder;
+
         // first check to see if the view is null. if so, we have to inflate it.
         if (convertView == null) {
             holder = new ViewHolder();
